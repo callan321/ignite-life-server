@@ -32,7 +32,7 @@ namespace Server.Migrations
                     Name = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
-                    Duration = table.Column<string>(type: "text", nullable: false)
+                    Duration = table.Column<TimeSpan>(type: "interval", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -159,6 +159,12 @@ namespace Server.Migrations
                 name: "IX_Bookings_UserProfileId",
                 table: "Bookings",
                 column: "UserProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingServices_Name",
+                table: "BookingServices",
+                column: "Name",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OpeningExceptions_BookingRuleId",

@@ -54,26 +54,23 @@ public static class DbSeeder
                     Name = "Massage",
                     Description = "Relaxing full-body massage",
                     Price = 80m,
-                    Duration = "01:00"
+                    Duration = TimeSpan.Parse("01:00")
                 },
                 new BookingService
                 {
                     Name = "Yoga Session",
                     Description = "Group yoga session with instructor",
                     Price = 50m,
-                    Duration = "00:45"
+                    Duration = TimeSpan.Parse("00:45")
                 },
                 new BookingService
                 {
                     Name = "Nutrition Consultation",
                     Description = "1-on-1 with a registered dietitian",
                     Price = 120m,
-                    Duration = "01:15"
-                }
-            );
+                    Duration = TimeSpan.Parse("01:15")
+                });
         }
-
         db.SaveChanges();
     }
-
 }

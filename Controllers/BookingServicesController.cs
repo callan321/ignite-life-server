@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Server.Data;
 using Server.Dtos;
 using Server.Models;
 using Server.Services;
@@ -10,9 +8,8 @@ namespace Server.Controllers
     [Route("api/[controller]")]
 
     [ApiController]
-    public class BookingServicesController(ApplicationDbContext context, BookingServicesService service) : ControllerBase
+    public class BookingServicesController(BookingServicesService service) : ControllerBase
     {
-        private readonly ApplicationDbContext _context = context;
         private readonly BookingServicesService _service = service;
 
         // GET: api/BookingServices
@@ -25,46 +22,22 @@ namespace Server.Controllers
             return Ok(result);
         }
 
-        // PUT: api/BookingServices/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBookingService(Guid id, BookingService bookingService)
-        {
-            if (id != bookingService.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(bookingService).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!BookingServiceExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
         // POST: api/BookingServices
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<BookingService>> PostBookingService(BookingService bookingService)
-        {
-            _context.BookingServices.Add(bookingService);
-            await _context.SaveChangesAsync();
+        public async Task<ActionResult<BookingService>> PostBookingService(CreateBookingServiceRequest request)
+        { 
+            var result = await _service.PostBookingServiceAsync(request);
 
-            return CreatedAtAction("GetBookingService", new { id = bookingService.Id }, bookingService);
+            return result.IsSuccess ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchBookingService([FromRoute] Guid id, [FromBody] UpdateBookingServiceRequest request)
+        {
+            var result = await _service.PatchBookingServiceAsync(id, request);
+
+            return result.IsSuccess ? Ok(result) : BadRequest(result);
         }
 
         // DELETE: api/BookingServices/5
@@ -74,11 +47,6 @@ namespace Server.Controllers
         {
             var result = await _service.DeleteBookingServiceAsync(id);
             return result.IsSuccess ? Ok(result) : NotFound(result);
-        }
-
-        private bool BookingServiceExists(Guid id)
-        {
-            return _context.BookingServices.Any(e => e.Id == id);
         }
     }
 }
