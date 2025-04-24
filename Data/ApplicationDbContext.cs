@@ -11,7 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<BookingRuleOpeningHour> OpeningHours { get; set; } = null!;
     public DbSet<BookingRuleOpeningException> OpeningExceptions { get; set; } = null!;
     public DbSet<BookingRules> BookingRules { get; set; } = null!;
-    public DbSet<BookingService> BookingServices { get; set; } = null!;
+    public DbSet<BookingServiceType> BookingServices { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,7 +63,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(h => new { h.DayOfWeek, h.BookingRulesId })
             .IsUnique();
 
-        modelBuilder.Entity<BookingService>()
+        modelBuilder.Entity<BookingServiceType>()
         .HasIndex(s => s.Name)
         .IsUnique();
     }

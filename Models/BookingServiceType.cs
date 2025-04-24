@@ -1,7 +1,8 @@
-﻿namespace Server.Dtos;
+﻿namespace Server.Models;
 
-public class CreateBookingServiceRequest
+public class BookingServiceType
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
     public required string Name { get; set; }
     public required string Description { get; set; }
     public required decimal Price { get; set; }

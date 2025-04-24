@@ -7,20 +7,20 @@ using Server.Models;
 
 namespace Server.Services;
 
-public class BookingServicesService(ApplicationDbContext Context)
+public class BookingServiceTypeService(ApplicationDbContext Context)
 {
     private readonly ApplicationDbContext _context = Context;
 
-    public async Task<ApiResult<IEnumerable<BookingService>>> GetAllBookingServiceAsync()
+    public async Task<ApiResult<IEnumerable<BookingServiceType>>> GetAllBookingServiceAsync()
     {
         var result = await _context.BookingServices.ToListAsync();
-        return ApiResult<IEnumerable<BookingService>>.Success(result);
+        return ApiResult<IEnumerable<BookingServiceType>>.Success(result);
     }
 
-    public async Task<ApiResult<IEnumerable<BookingService>>> PostBookingServiceAsync(CreateBookingServiceRequest request)
+    public async Task<ApiResult<IEnumerable<BookingServiceType>>> PostBookingServiceAsync(CreateBookingServiceTypeRequest request)
     {
 
-        var bookingService = new BookingService
+        var bookingService = new BookingServiceType
         {
             Name = request.Name,
             Description = request.Description,
@@ -33,13 +33,13 @@ public class BookingServicesService(ApplicationDbContext Context)
         return result;
     }
 
-    public async Task<ApiResult<IEnumerable<BookingService>>> PatchBookingServiceAsync(Guid id, UpdateBookingServiceRequest request)
+    public async Task<ApiResult<IEnumerable<BookingServiceType>>> PatchBookingServiceAsync(Guid id, UpdateBookingServiceTypeRequest request)
     {
         var bookingService = await _context.BookingServices.FindAsync(id);
 
         if (bookingService == null)
         {
-            return ApiResult<IEnumerable<BookingService>>.Fail("Booking service not found.");
+            return ApiResult<IEnumerable<BookingServiceType>>.Fail("Booking service not found.");
         }
 
         // Update only the fields provided in the request
@@ -54,7 +54,7 @@ public class BookingServicesService(ApplicationDbContext Context)
         }
         catch (DbUpdateConcurrencyException)
         {
-            return ApiResult<IEnumerable<BookingService>>.Fail("A concurrency error occurred while updating.");
+            return ApiResult<IEnumerable<BookingServiceType>>.Fail("A concurrency error occurred while updating.");
         }
 
         var result = await GetAllBookingServiceAsync();
@@ -62,12 +62,12 @@ public class BookingServicesService(ApplicationDbContext Context)
     }
 
 
-    public async Task<ApiResult<IEnumerable<BookingService>>> DeleteBookingServiceAsync(Guid id)
+    public async Task<ApiResult<IEnumerable<BookingServiceType>>> DeleteBookingServiceAsync(Guid id)
     {
         var bookingService = await _context.BookingServices.FindAsync(id);
         if (bookingService == null)
         {
-            return ApiResult<IEnumerable<BookingService>>.Fail("Booking service not found.");
+            return ApiResult<IEnumerable<BookingServiceType>>.Fail("Booking service not found.");
         }
 
         _context.BookingServices.Remove(bookingService);

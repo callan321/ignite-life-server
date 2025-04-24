@@ -12,7 +12,7 @@ using Server.Data;
 namespace Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250423023339_Init")]
+    [Migration("20250424072241_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -123,7 +123,7 @@ namespace Server.Migrations
                     b.ToTable("BookingRules");
                 });
 
-            modelBuilder.Entity("Server.Models.BookingService", b =>
+            modelBuilder.Entity("Server.Models.BookingServiceType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -205,7 +205,7 @@ namespace Server.Migrations
 
             modelBuilder.Entity("Server.Models.Booking", b =>
                 {
-                    b.HasOne("Server.Models.BookingService", "Service")
+                    b.HasOne("Server.Models.BookingServiceType", "Service")
                         .WithMany()
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);

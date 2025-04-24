@@ -120,7 +120,7 @@ namespace Server.Migrations
                     b.ToTable("BookingRules");
                 });
 
-            modelBuilder.Entity("Server.Models.BookingService", b =>
+            modelBuilder.Entity("Server.Models.BookingServiceType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -202,7 +202,7 @@ namespace Server.Migrations
 
             modelBuilder.Entity("Server.Models.Booking", b =>
                 {
-                    b.HasOne("Server.Models.BookingService", "Service")
+                    b.HasOne("Server.Models.BookingServiceType", "Service")
                         .WithMany()
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);

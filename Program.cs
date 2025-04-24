@@ -13,7 +13,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<BookingRulesService>();
 builder.Services.AddScoped<BookingRuleOpeningExceptionService>();
-builder.Services.AddScoped<BookingServicesService>();
+builder.Services.AddScoped<BookingServiceTypeService>();
 
 var app = builder.Build();
 

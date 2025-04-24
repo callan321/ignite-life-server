@@ -49,21 +49,21 @@ public static class DbSeeder
         if (!db.BookingServices.Any())
         {
             db.BookingServices.AddRange(
-                new BookingService
+                new BookingServiceType
                 {
                     Name = "Massage",
                     Description = "Relaxing full-body massage",
                     Price = 80m,
                     Duration = TimeSpan.Parse("01:00")
                 },
-                new BookingService
+                new BookingServiceType
                 {
                     Name = "Yoga Session",
                     Description = "Group yoga session with instructor",
                     Price = 50m,
                     Duration = TimeSpan.Parse("00:45")
                 },
-                new BookingService
+                new BookingServiceType
                 {
                     Name = "Nutrition Consultation",
                     Description = "1-on-1 with a registered dietitian",
