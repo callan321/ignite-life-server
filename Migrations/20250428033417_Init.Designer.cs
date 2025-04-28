@@ -12,7 +12,7 @@ using Server.Data;
 namespace Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250424072241_Init")]
+    [Migration("20250428033417_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -30,6 +30,9 @@ namespace Server.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("EndTime")
                         .HasColumnType("timestamp with time zone");
@@ -71,7 +74,7 @@ namespace Server.Migrations
 
                     b.HasIndex("BookingRuleId");
 
-                    b.ToTable("OpeningExceptions");
+                    b.ToTable("BookingRuleOpeningExceptions");
                 });
 
             modelBuilder.Entity("Server.Models.BookingRuleOpeningHour", b =>
@@ -99,7 +102,7 @@ namespace Server.Migrations
                     b.HasIndex("DayOfWeek", "BookingRulesId")
                         .IsUnique();
 
-                    b.ToTable("OpeningHours");
+                    b.ToTable("BookingRuleOpeningHours");
                 });
 
             modelBuilder.Entity("Server.Models.BookingRules", b =>
@@ -113,6 +116,15 @@ namespace Server.Migrations
 
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("MaxAdvanceBookingDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinAdvanceBookingHours")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SlotDurationMinutes")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -148,7 +160,32 @@ namespace Server.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("BookingServices");
+                    b.ToTable("BookingServiceType");
+                });
+
+            modelBuilder.Entity("Server.Models.BookingTimeSlot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BookingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
+
+                    b.ToTable("BookingTimeSlots");
                 });
 
             modelBuilder.Entity("Server.Models.UserInfo", b =>
@@ -238,6 +275,16 @@ namespace Server.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Server.Models.BookingTimeSlot", b =>
+                {
+                    b.HasOne("Server.Models.Booking", "Booking")
+                        .WithMany("TimeSlots")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Booking");
+                });
+
             modelBuilder.Entity("Server.Models.UserInfo", b =>
                 {
                     b.HasOne("Server.Models.UserProfile", "UserProfile")
@@ -247,6 +294,11 @@ namespace Server.Migrations
                         .IsRequired();
 
                     b.Navigation("UserProfile");
+                });
+
+            modelBuilder.Entity("Server.Models.Booking", b =>
+                {
+                    b.Navigation("TimeSlots");
                 });
 
             modelBuilder.Entity("Server.Models.BookingRules", b =>

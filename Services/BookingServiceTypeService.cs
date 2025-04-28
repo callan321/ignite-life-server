@@ -13,7 +13,7 @@ public class BookingServiceTypeService(ApplicationDbContext Context)
 
     public async Task<ApiResult<IEnumerable<BookingServiceType>>> GetAllBookingServiceAsync()
     {
-        var result = await _context.BookingServices.ToListAsync();
+        var result = await _context.BookingServiceType.ToListAsync();
         return ApiResult<IEnumerable<BookingServiceType>>.Success(result);
     }
 
@@ -27,7 +27,7 @@ public class BookingServiceTypeService(ApplicationDbContext Context)
             Price = request.Price,
             Duration = request.Duration
         };
-        _context.BookingServices.Add(bookingService);
+        _context.BookingServiceType.Add(bookingService);
         await _context.SaveChangesAsync();
         var result = await GetAllBookingServiceAsync();
         return result;
@@ -35,7 +35,7 @@ public class BookingServiceTypeService(ApplicationDbContext Context)
 
     public async Task<ApiResult<IEnumerable<BookingServiceType>>> PatchBookingServiceAsync(Guid id, UpdateBookingServiceTypeRequest request)
     {
-        var bookingService = await _context.BookingServices.FindAsync(id);
+        var bookingService = await _context.BookingServiceType.FindAsync(id);
 
         if (bookingService == null)
         {
@@ -64,13 +64,13 @@ public class BookingServiceTypeService(ApplicationDbContext Context)
 
     public async Task<ApiResult<IEnumerable<BookingServiceType>>> DeleteBookingServiceAsync(Guid id)
     {
-        var bookingService = await _context.BookingServices.FindAsync(id);
+        var bookingService = await _context.BookingServiceType.FindAsync(id);
         if (bookingService == null)
         {
             return ApiResult<IEnumerable<BookingServiceType>>.Fail("Booking service not found.");
         }
 
-        _context.BookingServices.Remove(bookingService);
+        _context.BookingServiceType.Remove(bookingService);
         await _context.SaveChangesAsync();
 
         var result = await GetAllBookingServiceAsync();

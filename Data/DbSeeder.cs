@@ -16,6 +16,9 @@ public static class DbSeeder
             {
                 BufferBetweenBookingsMinutes = 30,
                 IsDefault = true,
+                SlotDurationMinutes = 30,
+                MinAdvanceBookingHours = 12,
+                MaxAdvanceBookingDays = 30,
 
                 OpeningHours =
                 [
@@ -46,9 +49,9 @@ public static class DbSeeder
             db.BookingRules.Add(rules);
         }
 
-        if (!db.BookingServices.Any())
+        if (!db.BookingServiceType.Any())
         {
-            db.BookingServices.AddRange(
+            db.BookingServiceType.AddRange(
                 new BookingServiceType
                 {
                     Name = "Massage",

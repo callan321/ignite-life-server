@@ -8,10 +8,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UserProfile> UserProfiles { get; set; } = null!;
     public DbSet<UserInfo> UserInfos { get; set; } = null!;
     public DbSet<Booking> Bookings { get; set; } = null!;
-    public DbSet<BookingRuleOpeningHour> OpeningHours { get; set; } = null!;
-    public DbSet<BookingRuleOpeningException> OpeningExceptions { get; set; } = null!;
+    public DbSet<BookingRuleOpeningHour> BookingRuleOpeningHours { get; set; } = null!;
+    public DbSet<BookingRuleOpeningException> BookingRuleOpeningExceptions { get; set; } = null!;
     public DbSet<BookingRules> BookingRules { get; set; } = null!;
-    public DbSet<BookingServiceType> BookingServices { get; set; } = null!;
+    public DbSet<BookingServiceType> BookingServiceType { get; set; } = null!;
+    public DbSet<BookingTimeSlot> BookingTimeSlots { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,5 +67,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BookingServiceType>()
         .HasIndex(s => s.Name)
         .IsUnique();
+
+        modelBuilder.Entity<Booking>()
+            .HasMany(b => b.TimeSlots)
+            .WithOne(ts => ts.Booking)
+            .HasForeignKey(ts => ts.BookingId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

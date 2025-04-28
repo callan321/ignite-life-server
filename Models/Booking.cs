@@ -12,4 +12,8 @@ public class Booking
 
     public required DateTime StartTime { get; set; }
     public required DateTime EndTime { get; set; }
+
+    public List<BookingTimeSlot> TimeSlots { get; set; } = [];
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

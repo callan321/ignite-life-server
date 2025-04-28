@@ -17,7 +17,10 @@ namespace Server.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     IsDefault = table.Column<bool>(type: "boolean", nullable: false),
-                    BufferBetweenBookingsMinutes = table.Column<int>(type: "integer", nullable: false)
+                    MaxAdvanceBookingDays = table.Column<int>(type: "integer", nullable: false),
+                    BufferBetweenBookingsMinutes = table.Column<int>(type: "integer", nullable: false),
+                    SlotDurationMinutes = table.Column<int>(type: "integer", nullable: false),
+                    MinAdvanceBookingHours = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -25,7 +28,7 @@ namespace Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "BookingServices",
+                name: "BookingServiceType",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -36,7 +39,7 @@ namespace Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BookingServices", x => x.Id);
+                    table.PrimaryKey("PK_BookingServiceType", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -54,7 +57,7 @@ namespace Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OpeningExceptions",
+                name: "BookingRuleOpeningExceptions",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -64,9 +67,9 @@ namespace Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OpeningExceptions", x => x.Id);
+                    table.PrimaryKey("PK_BookingRuleOpeningExceptions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OpeningExceptions_BookingRules_BookingRuleId",
+                        name: "FK_BookingRuleOpeningExceptions_BookingRules_BookingRuleId",
                         column: x => x.BookingRuleId,
                         principalTable: "BookingRules",
                         principalColumn: "Id",
@@ -74,7 +77,7 @@ namespace Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OpeningHours",
+                name: "BookingRuleOpeningHours",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -85,9 +88,9 @@ namespace Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OpeningHours", x => x.Id);
+                    table.PrimaryKey("PK_BookingRuleOpeningHours", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OpeningHours_BookingRules_BookingRulesId",
+                        name: "FK_BookingRuleOpeningHours_BookingRules_BookingRulesId",
                         column: x => x.BookingRulesId,
                         principalTable: "BookingRules",
                         principalColumn: "Id",
@@ -102,15 +105,16 @@ namespace Server.Migrations
                     UserProfileId = table.Column<Guid>(type: "uuid", nullable: true),
                     ServiceId = table.Column<Guid>(type: "uuid", nullable: true),
                     StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Bookings", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Bookings_BookingServices_ServiceId",
+                        name: "FK_Bookings_BookingServiceType_ServiceId",
                         column: x => x.ServiceId,
-                        principalTable: "BookingServices",
+                        principalTable: "BookingServiceType",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
@@ -143,6 +147,43 @@ namespace Server.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "BookingTimeSlots",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsAvailable = table.Column<bool>(type: "boolean", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    BookingId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookingTimeSlots", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BookingTimeSlots_Bookings_BookingId",
+                        column: x => x.BookingId,
+                        principalTable: "Bookings",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingRuleOpeningExceptions_BookingRuleId",
+                table: "BookingRuleOpeningExceptions",
+                column: "BookingRuleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingRuleOpeningHours_BookingRulesId",
+                table: "BookingRuleOpeningHours",
+                column: "BookingRulesId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingRuleOpeningHours_DayOfWeek_BookingRulesId",
+                table: "BookingRuleOpeningHours",
+                columns: new[] { "DayOfWeek", "BookingRulesId" },
+                unique: true);
+
             migrationBuilder.CreateIndex(
                 name: "IX_BookingRules_IsDefault",
                 table: "BookingRules",
@@ -161,26 +202,15 @@ namespace Server.Migrations
                 column: "UserProfileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BookingServices_Name",
-                table: "BookingServices",
+                name: "IX_BookingServiceType_Name",
+                table: "BookingServiceType",
                 column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_OpeningExceptions_BookingRuleId",
-                table: "OpeningExceptions",
-                column: "BookingRuleId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OpeningHours_BookingRulesId",
-                table: "OpeningHours",
-                column: "BookingRulesId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OpeningHours_DayOfWeek_BookingRulesId",
-                table: "OpeningHours",
-                columns: new[] { "DayOfWeek", "BookingRulesId" },
-                unique: true);
+                name: "IX_BookingTimeSlots_BookingId",
+                table: "BookingTimeSlots",
+                column: "BookingId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserInfos_UserProfileId",
@@ -193,22 +223,25 @@ namespace Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Bookings");
+                name: "BookingRuleOpeningExceptions");
 
             migrationBuilder.DropTable(
-                name: "OpeningExceptions");
+                name: "BookingRuleOpeningHours");
 
             migrationBuilder.DropTable(
-                name: "OpeningHours");
+                name: "BookingTimeSlots");
 
             migrationBuilder.DropTable(
                 name: "UserInfos");
 
             migrationBuilder.DropTable(
-                name: "BookingServices");
+                name: "BookingRules");
 
             migrationBuilder.DropTable(
-                name: "BookingRules");
+                name: "Bookings");
+
+            migrationBuilder.DropTable(
+                name: "BookingServiceType");
 
             migrationBuilder.DropTable(
                 name: "UserProfiles");

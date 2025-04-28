@@ -19,7 +19,7 @@ public class BookingRuleOpeningExceptionService(ApplicationDbContext dbContext)
         if (defaultRules == null)
             return ApiResult<ReadBookingRulesResponse>.Fail("Default booking rules not found.");
 
-        var exceptions = await _dbContext.OpeningExceptions
+        var exceptions = await _dbContext.BookingRuleOpeningExceptions
             .Where(e => e.BookingRuleId == defaultRules.Id)
             .ToListAsync();
 
@@ -36,7 +36,7 @@ public class BookingRuleOpeningExceptionService(ApplicationDbContext dbContext)
             EndTime = request.EndTime
         };
 
-        _dbContext.OpeningExceptions.Add(newException);
+        _dbContext.BookingRuleOpeningExceptions.Add(newException);
         await _dbContext.SaveChangesAsync();
 
         return await GetRefreshedBookingRulesResultAsync();
@@ -44,7 +44,7 @@ public class BookingRuleOpeningExceptionService(ApplicationDbContext dbContext)
 
     public async Task<ApiResult<ReadBookingRulesResponse>> UpdateOpeningExceptionAsync(Guid id, UpdateBookingRuleOpeningExceptionRequest request)
     {
-        var exception = await _dbContext.OpeningExceptions.FindAsync(id);
+        var exception = await _dbContext.BookingRuleOpeningExceptions.FindAsync(id);
         if (exception == null)
             return ApiResult<ReadBookingRulesResponse>.Fail("Exception not found.");
 
@@ -65,11 +65,11 @@ public class BookingRuleOpeningExceptionService(ApplicationDbContext dbContext)
 
     public async Task<ApiResult<ReadBookingRulesResponse>> DeleteOpeningExceptionAsync(Guid id)
     {
-        var exception = await _dbContext.OpeningExceptions.FindAsync(id);
+        var exception = await _dbContext.BookingRuleOpeningExceptions.FindAsync(id);
         if (exception == null)
             return ApiResult<ReadBookingRulesResponse>.Fail("Exception not found.");
 
-        _dbContext.OpeningExceptions.Remove(exception);
+        _dbContext.BookingRuleOpeningExceptions.Remove(exception);
         await _dbContext.SaveChangesAsync();
 
         return await GetRefreshedBookingRulesResultAsync();
