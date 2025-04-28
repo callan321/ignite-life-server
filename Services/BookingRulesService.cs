@@ -24,8 +24,17 @@ public class BookingRulesService(ApplicationDbContext context)
         if (defaultBookingRules == null)
             return ApiResult<ReadBookingRulesResponse>.Fail("Default booking rules not found.");
 
+        if (updateRequest.MaxAdvanceBookingDays.HasValue)
+            defaultBookingRules.MaxAdvanceBookingDays = updateRequest.MaxAdvanceBookingDays.Value;
+
         if (updateRequest.BufferBetweenBookingsMinutes.HasValue)
             defaultBookingRules.BufferBetweenBookingsMinutes = updateRequest.BufferBetweenBookingsMinutes.Value;
+
+        if (updateRequest.SlotDurationMinutes.HasValue)
+            defaultBookingRules.SlotDurationMinutes = updateRequest.SlotDurationMinutes.Value;
+
+        if (updateRequest.MinAdvanceBookingHours.HasValue)
+            defaultBookingRules.MinAdvanceBookingHours = updateRequest.MinAdvanceBookingHours.Value;
 
         if (updateRequest.OpeningHours != null)
         {
@@ -49,6 +58,12 @@ public class BookingRulesService(ApplicationDbContext context)
                         existing.CloseTime = openingHourUpdate.CloseTime.Value;
                 }
             }
+        }
+
+        if (updateRequest.OpeningExceptions != null)
+        {
+            // (Optional) Handle updating opening exceptions here if needed
+            // You can match by Id or recreate the list.
         }
 
         await _dbContext.SaveChangesAsync();

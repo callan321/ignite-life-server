@@ -28,17 +28,28 @@ public class BookingTimeSlotService(ApplicationDbContext context, BookingRulesSe
 
         foreach (var openingHour in bookingRules.OpeningHours)
         {
-            // openingHour.DayOfWeek (Monday, Tuesday, etc.)
-            // openingHour.OpenTime (e.g., 09:00 AM)
-            // openingHour.CloseTime (e.g., 05:00 PM)
+            // Skip if the opening and closing times are the same (closed day like Sunday maybe)
+            if (openingHour.OpenTime == openingHour.CloseTime)
+                continue;
 
             var currentStart = openingHour.OpenTime;
             var closeTime = openingHour.CloseTime;
+            var slotDuration = TimeSpan.FromMinutes(bookingRules.SlotDurationMinutes);
 
+            while (currentStart + slotDuration <= closeTime)
+            {
+                var slot = new BookingTimeSlot
+                {
+                    StartTime = currentStart,
+                    EndTime = currentStart + slotDuration,
+                    IsAvailable = true
+                };
 
+                timeSlots.Add(slot);
 
-
-
+                currentStart += slotDuration; // Move to the next slot
+            }
         }
+
     }
 }

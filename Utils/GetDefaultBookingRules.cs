@@ -27,19 +27,23 @@ public static class BookingRulesUtils
     {
         return new ReadBookingRulesResponse
         {
+            MaxAdvanceBookingDays = bookingRules.MaxAdvanceBookingDays,
             BufferBetweenBookingsMinutes = bookingRules.BufferBetweenBookingsMinutes,
+            SlotDurationMinutes = bookingRules.SlotDurationMinutes,
+            MinAdvanceBookingHours = bookingRules.MinAdvanceBookingHours,
             OpeningHours = [.. bookingRules.OpeningHours.Select(h => new ReadBookingRuleOpeningHourResponse
-            {
-                DayOfWeek = h.DayOfWeek,
-                OpenTime = h.OpenTime,
-                CloseTime = h.CloseTime
-            })],
+        {
+            DayOfWeek = h.DayOfWeek,
+            OpenTime = h.OpenTime,
+            CloseTime = h.CloseTime
+        })],
             OpeningExceptions = [.. bookingRules.OpeningExceptions.Select(e => new ReadBookingRuleOpeningExceptionResponse
-            {
-                Id = e.Id,
-                StartTime = e.StartTime,
-                EndTime = e.EndTime
-            })]
+        {
+            Id = e.Id,
+            StartTime = e.StartTime,
+            EndTime = e.EndTime
+        })]
         };
     }
+
 }
