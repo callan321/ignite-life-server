@@ -62,7 +62,7 @@ public class BookingRulesService(ApplicationDbContext context)
 
         if (updateRequest.OpeningExceptions != null)
         {
-            // (Optional) Handle updating opening exceptions here if needed
+            // TODO Handle updating opening exceptions here if needed
             // You can match by Id or recreate the list.
         }
 
