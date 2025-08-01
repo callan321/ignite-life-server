@@ -1,3 +1,15 @@
-﻿### TODO
+# Ignite Life
 
-- cleanup opening exception where end time is earler that todays date 
+## Setup
+
+### Server
+
+Restore the dotnet packages:
+
+```bash
+dotnet restore
+```
+
+### Before Production
+
+1. DELETE  adminer service
