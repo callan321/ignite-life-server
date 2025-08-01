@@ -1,5 +1,4 @@
 services:
-
   db:
     image: postgres:17
     restart: always
@@ -10,6 +9,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -18,14 +21,67 @@ services:
 
   ignite-api:
     build:
-      context: ./IgniteLifeApi
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: IgniteLifeApi/Dockerfile
     depends_on:
       db:
-        condition: service_healthy 
+        condition: service_healthy
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      - ASPNETCORE_ENVIRONMENT=Development
+      ConnectionStrings__DefaultConnection: Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://+:8080"
     ports:
       - "8080:8080"
-      - "8081:8081"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  db_test:
+    image: postgres:17
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD}
+      POSTGRES_USER: ${TEST_POSTGRES_USER}
+      POSTGRES_DB: ${TEST_POSTGRES_DB}
+    networks:
+      - test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TEST_POSTGRES_USER} -d ${TEST_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tests:
+    build:
+      context: .
+      dockerfile: IgniteLifeApi.Tests/Dockerfile.tests
+    depends_on:
+      db_test:
+        condition: service_healthy
+      ignite-api:
+        condition: service_healthy
+    environment:
+      TEST_CONNECTION_STRING: "Host=db_test;Database=${TEST_POSTGRES_DB};Username=${TEST_POSTGRES_USER};Password=${TEST_POSTGRES_PASSWORD}"
+    entrypoint: [
+      "dotnet", "test",
+      "IgniteLifeApi.Tests/IgniteLifeApi.Tests.csproj",
+      "--no-build",
+      "-c", "Release",
+      "--logger", "console;verbosity=detailed"
+    ]
+    restart: "no"
+    networks:
+      - test
+      - backend
+
+volumes:
+  db_data:
+
+networks:
+  backend:
+  test:

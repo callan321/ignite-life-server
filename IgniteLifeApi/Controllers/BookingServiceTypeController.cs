@@ -4,7 +4,7 @@ using Server.Dtos;
 using Server.Models;
 using Server.Services;
 
-namespace Server.Controllers
+namespace IgniteLifeApi.Controllers
 {
     [Route("api/[controller]")]
 
@@ -27,7 +27,7 @@ namespace Server.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<BookingServiceType>> PostBookingService(CreateBookingServiceTypeRequest request)
-        { 
+        {
             var result = await _service.PostBookingServiceAsync(request);
 
             return result.IsSuccess ? Ok(result) : BadRequest(result);

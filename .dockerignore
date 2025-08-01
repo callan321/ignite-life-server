@@ -1,0 +1,41 @@
+# Ignore Git and IDE files
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/.idea
+**/.classpath
+**/.project
+**/.settings
+
+# Ignore build artifacts
+**/bin
+**/obj
+**/out
+**/*.user
+**/*.dbmdl
+**/*.jfm
+
+# Ignore Docker-specific files (to avoid recursive builds)
+**/.dockerignore
+**/docker-compose*
+**/Dockerfile*
+
+# Ignore secrets and environment files
+**/.env
+**/secrets.dev.yaml
+**/values.dev.yaml
+
+# Ignore Node-related files
+**/node_modules
+**/npm-debug.log
+
+# Keep LICENSE and README out of context
+LICENSE
+README.md
+
+# Keep these git files if needed
+!.git/HEAD
+!.git/config
+!.git/packed-refs
+!.git/refs/heads/**

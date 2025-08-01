@@ -1,6 +1,7 @@
-﻿using Server.Models;
+﻿using IgniteLifeApi.Data;
+using Server.Models;
 
-namespace IgniteLifeApi.Data;
+namespace IgniteLifeApi.Tests.Utilities;
 
 public static class DbSeeder
 {

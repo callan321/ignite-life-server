@@ -2,15 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Models;
 
-namespace Server.Services;
+namespace IgniteLifeApi.Services;
 
 public class BookingService(ApplicationDbContext context)
 {
     private readonly ApplicationDbContext _context = context;
-
-    public async Task<List<Booking>> GetAvailableBookingsAsync()
-    {
-        return await _context.Bookings.ToListAsync();
-    }
-
 }

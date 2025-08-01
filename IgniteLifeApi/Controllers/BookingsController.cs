@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Server.Services;
+﻿using IgniteLifeApi.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace IgniteLifeApi.Controllers;
 
@@ -8,8 +8,5 @@ namespace IgniteLifeApi.Controllers;
 public class BookingsController(BookingService service) : ControllerBase
 {
     private readonly BookingService _service = service;
-
-
-
 
 }
