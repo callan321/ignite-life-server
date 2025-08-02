@@ -6,11 +6,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace IgniteLifeApi.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Inital : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "BookingRuleBlockedPeriod",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookingRuleBlockedPeriod", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "BookingRules",
                 columns: table => new
@@ -54,26 +67,6 @@ namespace IgniteLifeApi.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_UserProfiles", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "BookingRuleOpeningExceptions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    BookingRuleId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BookingRuleOpeningExceptions", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_BookingRuleOpeningExceptions_BookingRules_BookingRuleId",
-                        column: x => x.BookingRuleId,
-                        principalTable: "BookingRules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -148,11 +141,6 @@ namespace IgniteLifeApi.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_BookingRuleOpeningExceptions_BookingRuleId",
-                table: "BookingRuleOpeningExceptions",
-                column: "BookingRuleId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_BookingRuleOpeningHours_BookingRulesId",
                 table: "BookingRuleOpeningHours",
                 column: "BookingRulesId");
@@ -197,7 +185,7 @@ namespace IgniteLifeApi.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "BookingRuleOpeningExceptions");
+                name: "BookingRuleBlockedPeriod");
 
             migrationBuilder.DropTable(
                 name: "BookingRuleOpeningHours");

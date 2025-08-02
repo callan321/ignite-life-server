@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IgniteLifeApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250731131352_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250802124726_AddDesc")]
+    partial class AddDesc
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,56 @@ namespace IgniteLifeApi.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("IgniteLifeApi.Models.BookingRuleBlockedPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("EndDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BookingRuleBlockedPeriod");
+                });
+
+            modelBuilder.Entity("IgniteLifeApi.Models.BookingRules", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BufferBetweenBookingsMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MaxAdvanceBookingDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinAdvanceBookingHours")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SlotDurationMinutes")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsDefault")
+                        .IsUnique()
+                        .HasFilter("\"IsDefault\" = TRUE");
+
+                    b.ToTable("BookingRules");
+                });
 
             modelBuilder.Entity("Server.Models.Booking", b =>
                 {
@@ -55,28 +105,6 @@ namespace IgniteLifeApi.Migrations
                     b.ToTable("Bookings");
                 });
 
-            modelBuilder.Entity("Server.Models.BookingRuleOpeningException", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BookingRuleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("EndTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingRuleId");
-
-                    b.ToTable("BookingRuleOpeningExceptions");
-                });
-
             modelBuilder.Entity("Server.Models.BookingRuleOpeningHour", b =>
                 {
                     b.Property<Guid>("Id")
@@ -103,36 +131,6 @@ namespace IgniteLifeApi.Migrations
                         .IsUnique();
 
                     b.ToTable("BookingRuleOpeningHours");
-                });
-
-            modelBuilder.Entity("Server.Models.BookingRules", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("BufferBetweenBookingsMinutes")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("MaxAdvanceBookingDays")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MinAdvanceBookingHours")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SlotDurationMinutes")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsDefault")
-                        .IsUnique()
-                        .HasFilter("\"IsDefault\" = TRUE");
-
-                    b.ToTable("BookingRules");
                 });
 
             modelBuilder.Entity("Server.Models.BookingServiceType", b =>
@@ -232,18 +230,9 @@ namespace IgniteLifeApi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Server.Models.BookingRuleOpeningException", b =>
-                {
-                    b.HasOne("Server.Models.BookingRules", null)
-                        .WithMany("OpeningExceptions")
-                        .HasForeignKey("BookingRuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Server.Models.BookingRuleOpeningHour", b =>
                 {
-                    b.HasOne("Server.Models.BookingRules", null)
+                    b.HasOne("IgniteLifeApi.Models.BookingRules", null)
                         .WithMany("OpeningHours")
                         .HasForeignKey("BookingRulesId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -261,10 +250,8 @@ namespace IgniteLifeApi.Migrations
                     b.Navigation("UserProfile");
                 });
 
-            modelBuilder.Entity("Server.Models.BookingRules", b =>
+            modelBuilder.Entity("IgniteLifeApi.Models.BookingRules", b =>
                 {
-                    b.Navigation("OpeningExceptions");
-
                     b.Navigation("OpeningHours");
                 });
 

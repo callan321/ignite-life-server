@@ -1,19 +1,17 @@
-# Dockerfile.tests
 FROM mcr.microsoft.com/dotnet/sdk:9.0
 WORKDIR /src
 
-# Copy csproj and restore (cache optimization)
+# Copy solution and project files
 COPY IgniteLifeApi.sln ./
 COPY IgniteLifeApi/*.csproj IgniteLifeApi/
 COPY IgniteLifeApi.Tests/*.csproj IgniteLifeApi.Tests/
+
+# Restore dependencies
 RUN dotnet restore
 
-# Copy remaining files
+# Copy the rest of the source code
 COPY IgniteLifeApi/ IgniteLifeApi/
 COPY IgniteLifeApi.Tests/ IgniteLifeApi.Tests/
 
-# Build before testing for better separation
+# Build tests
 RUN dotnet build -c Release --no-restore
-
-# Run tests and exit
-ENTRYPOINT ["dotnet", "test", "IgniteLifeApi.Tests/IgniteLifeApi.Tests.csproj", "-c", "Release", "--no-build"]

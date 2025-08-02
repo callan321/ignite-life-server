@@ -1,10 +1,6 @@
 # Use ASP.NET runtime image as base for running app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
-
-# Install curl for healthchecks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
 # Expose HTTP port only (no HTTPS in container)
 EXPOSE 8080
 
@@ -33,12 +29,7 @@ RUN dotnet publish "IgniteLifeApi.csproj" -c $BUILD_CONFIGURATION -o /app/publis
 # Final image to run the app
 FROM base AS final
 WORKDIR /app
-
-# Copy published output from publish stage
 COPY --from=publish /app/publish .
-
-# Environment variables for running inside container with HTTP only
-ENV DOTNET_RUNNING_IN_CONTAINER=true
 ENV ASPNETCORE_URLS=http://+:8080
 
 # Run the app

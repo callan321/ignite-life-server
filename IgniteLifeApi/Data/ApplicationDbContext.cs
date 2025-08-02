@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using IgniteLifeApi.Models;
+using Microsoft.EntityFrameworkCore;
 using Server.Models;
 
 namespace IgniteLifeApi.Data;
@@ -9,7 +10,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UserInfo> UserInfos { get; set; } = null!;
     public DbSet<Booking> Bookings { get; set; } = null!;
     public DbSet<BookingRuleOpeningHour> BookingRuleOpeningHours { get; set; } = null!;
-    public DbSet<BookingRuleOpeningException> BookingRuleOpeningExceptions { get; set; } = null!;
+    public DbSet<BookingRuleBlockedPeriod> BookingRuleBlockedPeriod { get; set; } = null!;
     public DbSet<BookingRules> BookingRules { get; set; } = null!;
     public DbSet<BookingServiceType> BookingServiceType { get; set; } = null!;
 
@@ -49,13 +50,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(r => r.OpeningHours)
             .WithOne()
             .HasForeignKey(h => h.BookingRulesId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Configure the one-to-many relationship between BookingRules and OpeningExceptions
-        modelBuilder.Entity<BookingRules>()
-            .HasMany(r => r.OpeningExceptions)
-            .WithOne()
-            .HasForeignKey(e => e.BookingRuleId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Constraint to ensure that the same day of the week cannot have multiple opening hours for the same BookingRules

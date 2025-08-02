@@ -1,25 +1,21 @@
 using IgniteLifeApi.Data;
+using IgniteLifeApi.Middleware;
 using IgniteLifeApi.Services;
 using Microsoft.EntityFrameworkCore;
-using Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Health checks now use built-in support (no NuGet package needed)
-builder.Services.AddHealthChecks();
-
 // Add services to the container
 builder.Services.AddControllers();
-builder.Services.AddOpenApi(); // For OpenAPI/Swagger
+builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks();
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Services
-builder.Services.AddScoped<BookingRulesService>();
-builder.Services.AddScoped<BookingRuleOpeningExceptionService>();
-builder.Services.AddScoped<BookingServiceTypeService>();
+builder.Services.AddScoped<BookingRuleBlockedPeriodService>();
 
 var app = builder.Build();
 
@@ -29,17 +25,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// ✅ Run EF migrations automatically on startup
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
-}
-
-// ✅ Health checks endpoints
+// Health checks endpoints
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

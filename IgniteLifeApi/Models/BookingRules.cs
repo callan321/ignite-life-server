@@ -1,4 +1,6 @@
-﻿namespace Server.Models;
+﻿using Server.Models;
+
+namespace IgniteLifeApi.Models;
 
 public class BookingRules
 {
@@ -17,7 +19,4 @@ public class BookingRules
     public int MinAdvanceBookingHours { get; set; } = 12;
     // One-to-many: opening hours per day
     public List<BookingRuleOpeningHour> OpeningHours { get; set; } = [];
-
-    // One-to-many: opening exceptions
-    public List<BookingRuleOpeningException> OpeningExceptions { get; set; } = [];
 }
