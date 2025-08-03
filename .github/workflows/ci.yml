@@ -13,16 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Debug: Show current directory and contents
-      - name: Debug working directory
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Top-level files:"
-          ls -la /
-
-          echo "Repo files:"
-          ls -la
-
       - name: Verify .env.test exists
         run: cat .env.test
 
