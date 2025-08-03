@@ -1,5 +1,7 @@
 # Ignite Life
 
+![CI - Run Tests](https://github.com/callan321/ignite-life-server/actions/workflows/ci.yml/badge.svg)
+
 ## 🛠️ Prerequisites (For Development)
 
 ### Windows and MacOS
@@ -13,67 +15,40 @@ Includes both **Docker Engine** and **Docker Compose**, so no extra installs nee
 - Install [Docker Engine](https://docs.docker.com/engine/install/)  
 - Install [Docker Compose](https://docs.docker.com/compose/install/) (if not bundled)
 
-## Initial setup  
+## 🚀 Development Setup  
 
-Clone the repository and build Docker images:
+To get started, follow these steps:
 
-```bash
-git clone TODO
-cd TODO
-docker compose build
-```
+1. **Clone the repository**
 
-## 🖥️ Running the Server
+    ```bash
+    git clone https://github.com/callan321/ignite-life-server.git
+    ```
 
-Start the backend API and database:
+2. **Navigate into the project folder**
 
-```bash
-docker compose up ignite-api  
-```
+    ```bash
+    cd ignite-life-server
+    ```
 
-API runs at:  
+3. **Build and run the test environment**
 
-- <http://localhost:8080>  
-- <https://localhost:8081>  
+    ```bash
+    docker compose --env-file .env.test up --build --exit-code-from tests tests
+    ```
 
-Stop the server:
+    ✅ This command:
+    - Builds all containers  
+    - Starts a **PostgreSQL test database**  
+    - Builds and runs all tests in Docker  
+    - Leaves the test database running for further testing  
 
-```bash
-docker compose down  
-```
+### ⚙️ After Initial Setup
 
-## 🧪 Running Tests
-
-### Option 1 - Clean, isolated run
-
-```bash
-docker compose up --abort-on-container-exit tests  
-```
-
-### Option 2 - Fast iterative testing
-
-start test database
+Once the test database is running, you can run tests directly without rebuilding Docker:
 
 ```bash
-docker compose up -d db_test
+dotnet test
 ```
 
-run tests
-
-```bash
-docker compose run --rm tests  
-```
-
-stop containers
-
-```bash
-docker compose down
-```
-
-## 🔄 Rebuilding Images
-
-Rebuild when you add/remove NuGet packages or modify Dockerfiles:
-
-```bash
-docker compose build
-```
+> ⚠️ If you add or remove NuGet packages or change any .csproj project files, you must repeat Step 3 to rebuild the Docker image so dependencies are updated.
