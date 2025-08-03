@@ -12,14 +12,12 @@ services:
   test_db:
     image: postgres:17-alpine
     container_name: test_db
-    ports:
-      - "5433:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"] 
-      interval: 1s
-      timeout: 1s
-      retries: 30
-      start_period: 1s
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   tests:
     build:
@@ -30,3 +28,4 @@ services:
     depends_on:
       test_db:
         condition: service_healthy
+
