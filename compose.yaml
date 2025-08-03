@@ -22,6 +22,8 @@ services:
       timeout: 5s
       retries: 15
       start_period: 10s
+    ports:
+    - "5433:5432"
 
   tests:
     build:
