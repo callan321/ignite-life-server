@@ -54,7 +54,7 @@ This command will:
 
 ### 🧪 Option 2: Run tests locally with Docker DB
 
-much faster and the reccomneded way for dev but not exact thing 
+much faster and the reccomneded way for dev but not exact thing
 
 1. Start the test database:
 
