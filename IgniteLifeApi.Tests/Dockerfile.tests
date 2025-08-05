@@ -2,18 +2,19 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS test
 WORKDIR /src
 
 # Copy solution and csproj files for caching
-COPY IgniteLifeApi.sln ./
 COPY IgniteLifeApi/*.csproj IgniteLifeApi/
 COPY IgniteLifeApi.Tests/*.csproj IgniteLifeApi.Tests/
 
-# Restore dependencies
-RUN dotnet restore
+# Restore dependencies for the test project 
+# this also restores the API
+RUN dotnet restore IgniteLifeApi.Tests/IgniteLifeApi.Tests.csproj
 
 # Copy remaining source
-COPY . .
+COPY IgniteLifeApi/ IgniteLifeApi/
+COPY IgniteLifeApi.Tests/ IgniteLifeApi.Tests/
 
-# Build the test project
-RUN dotnet build -c Release --no-restore
+# Build the test project explicitly
+RUN dotnet build IgniteLifeApi.Tests/IgniteLifeApi.Tests.csproj -c Release --no-restore
 
 # Set working directory to test project
 WORKDIR /src/IgniteLifeApi.Tests

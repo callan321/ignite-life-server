@@ -1,37 +1,44 @@
+##############################################
+# 🔥 IMPORTANT 🔥
+# These variables MUST stay in sync with:
+#   ➜ IgniteLifeApi/appsettings.Testing.json
+#
+# The database name, user, password, host, 
+# and port must exactly match the connection 
+# string used in your testing configuration.
+##############################################
+
 services:
-  api:
-    build:
-      context: .
-      dockerfile: IgniteLifeApi/Dockerfile
-    environment:
-      ASPNETCORE_URLS: "http://+:8080"
-      ConnectionStrings__DefaultConnection: "Host=test_db;Port=5432;Database=testdb;Username=postgres;Password=postgres"
-    ports:
-      - "8080:8080"
-      
   test_db:
     image: postgres:17-alpine
     container_name: test_db
-    environment:           
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"] 
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "testdb" ]
       interval: 5s
       timeout: 5s
-      retries: 15
+      retries: 10
       start_period: 10s
     ports:
-    - "5433:5432"
+      - "5433:5432"
+    networks:
+      - api_test_network
 
   tests:
     build:
       context: .
       dockerfile: IgniteLifeApi.Tests/Dockerfile.tests
+    container_name: api_tests
     environment:
-      ConnectionStrings__DefaultConnection: "Host=${DB_HOST};Port=${DB_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__DefaultConnection: "Host=test_db;Port=5432;Database=testdb;Username=postgres;Password=postgres"
     depends_on:
       test_db:
         condition: service_healthy
+    networks:
+      - api_test_network
 
+networks:
+  api_test_network:

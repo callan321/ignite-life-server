@@ -13,14 +13,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify .env.test exists
-        run: cat .env.test
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Run tests via docker-compose
-        run: docker compose --env-file .env.test up --build --abort-on-container-exit --exit-code-from tests tests
+        run: docker compose up --build --exit-code-from tests tests
 
       - name: Show DB logs if fail
         if: failure()

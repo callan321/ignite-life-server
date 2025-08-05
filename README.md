@@ -34,7 +34,7 @@ To get started, follow these steps:
 3. **Build and run the test environment**
 
     ```bash
-    docker compose --env-file .env.test up --build --exit-code-from tests tests
+    docker compose up --build --exit-code-from tests tests
     ```
 
     ✅ This command:
