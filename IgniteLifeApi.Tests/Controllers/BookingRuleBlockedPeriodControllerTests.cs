@@ -62,7 +62,6 @@ namespace IgniteLifeApi.Tests.Controllers
             delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
-
         [Fact]
         public async Task InvalidDtos_ShouldReturnBadRequest()
         {
@@ -515,7 +514,6 @@ namespace IgniteLifeApi.Tests.Controllers
             var periods = await get.Content.ReadFromJsonAsync<List<BookingRuleBlockedPeriodDto>>();
             periods.Should().NotContain(p => p.Id == created.Id);
         }
-
 
         [Fact]
         public async Task CreateBlockedPeriod_ShouldReturnConflict_WhenDatesAreIdentical()
