@@ -4,8 +4,13 @@ namespace IgniteLifeApi.Dtos.BookingRuleBlockedPeriod
 {
     public class CreateBookingRuleBlockedPeriodDto
     {
-        public DateTime StartDateTime { get; set; }
-        public DateTime EndDateTime { get; set; }
-        public string Description { get; set; } = string.Empty;
+        [Required]
+        public DateTime? StartDateTime { get; set; }
+
+        [Required]
+        public DateTime? EndDateTime { get; set; }
+
+        [MaxLength(1000)]
+        public string? Description { get; set; }
     }
 }
