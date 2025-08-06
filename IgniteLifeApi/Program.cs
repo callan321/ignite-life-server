@@ -1,7 +1,11 @@
-using IgniteLifeApi.Data;
+using FluentValidation;
+using IgniteLifeApi.Application.Services.Implementations;
+using IgniteLifeApi.Application.Validators.BookingRuleBlockedPeriod;
+using IgniteLifeApi.Controllers.Common.Transformers;
+using IgniteLifeApi.Infrastructure.Data;
 using IgniteLifeApi.Middleware;
-using IgniteLifeApi.Services;
 using Microsoft.EntityFrameworkCore;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +21,26 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Services
 builder.Services.AddScoped<BookingRuleBlockedPeriodService>();
 
+// FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRuleBlockedPeriodRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingRuleBlockedPeriodRequestValidator>();
+
+// AutoValidation for FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+
+
+// OpenAPI configuration
+builder.Services.AddOpenApi(options =>
+{
+    options.AddOperationTransformer<JsonOnlyOperationTransformer>();
+    options.AddOperationTransformer<AuthCookieOperationTransformer>();
+    options.AddDocumentTransformer<CookieAuthDocumentTransformer>();
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// API Docs
+app.MapOpenApi();
 
 // Health checks endpoints
 app.MapHealthChecks("/health");

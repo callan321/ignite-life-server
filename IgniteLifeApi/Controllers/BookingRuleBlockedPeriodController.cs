@@ -1,6 +1,6 @@
-﻿using IgniteLifeApi.Controllers.Common;
-using IgniteLifeApi.Dtos.BookingRuleBlockedPeriod;
-using IgniteLifeApi.Services;
+﻿using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
+using IgniteLifeApi.Application.Services.Implementations;
+using IgniteLifeApi.Controllers.Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IgniteLifeApi.Controllers;
@@ -21,14 +21,14 @@ public class BookingRuleBlockedPeriodController(BookingRuleBlockedPeriodService 
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateBookingRuleBlockedPeriodDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateBookingRuleBlockedPeriodRequest dto)
     {
         var result = await _service.CreateBlockedPeriodAsync(dto);
         return ServiceResultToActionResult.ToActionResult(this, result);
     }
 
     [HttpPatch("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBookingRuleBlockedPeriodDto dto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBookingRuleBlockedPeriodRequest dto)
     {
         if (id != dto.Id)
             return BadRequest(new { error = "ID in URL does not match ID in body." });

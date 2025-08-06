@@ -1,4 +1,4 @@
-﻿using IgniteLifeApi.Services.Common;
+﻿using IgniteLifeApi.Application.Services.Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IgniteLifeApi.Controllers.Common
