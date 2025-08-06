@@ -545,5 +545,38 @@ namespace IgniteLifeApi.Tests.Controllers
             var delete = await _client.DeleteAsync($"{_baseUrl}/{created1!.Id}");
             delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
+
+        [Fact]
+        public async Task ConcurrentCreates_ShouldAllowOnlyOne_WhenPeriodsOverlap()
+        {
+            var start = DateTime.UtcNow.AddDays(900);
+            var dto1 = new CreateBookingRuleBlockedPeriodDto
+            {
+                StartDateTime = start,
+                EndDateTime = start.AddDays(4),
+                Description = "Concurrent Block 1"
+            };
+            var dto2 = new CreateBookingRuleBlockedPeriodDto
+            {
+                StartDateTime = start.AddDays(1),
+                EndDateTime = start.AddDays(3),
+                Description = "Concurrent Block 2"
+            };
+
+            // Start both requests concurrently
+            var task1 = _client.PostAsJsonAsync(_baseUrl, dto1);
+            var task2 = _client.PostAsJsonAsync(_baseUrl, dto2);
+
+            var responses = await Task.WhenAll(task1, task2);
+
+            responses.Count(r => r.StatusCode == HttpStatusCode.Created).Should().Be(1);
+            responses.Count(r => r.StatusCode == HttpStatusCode.Conflict).Should().Be(1);
+
+            // Cleanup
+            var createdResponse = responses.First(r => r.StatusCode == HttpStatusCode.Created);
+            var created = await createdResponse.Content.ReadFromJsonAsync<BookingRuleBlockedPeriodDto>();
+
+            await _client.DeleteAsync($"{_baseUrl}/{created!.Id}");
+        }
     }
 }

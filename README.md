@@ -54,7 +54,7 @@ This command will:
 
 ### 🧪 Option 2: Run tests locally with Docker DB
 
-much faster and the reccomneded way for dev but not exact thing
+much faster and the reccomneded way for dev but not exact thing 
 
 1. Start the test database:
 
@@ -69,6 +69,5 @@ much faster and the reccomneded way for dev but not exact thing
     dotnet test
     ```
 
-💡 Note: This method is much faster and recommended for day-to-day development, but it won’t be an exact match to the CI environment.
 
 ---

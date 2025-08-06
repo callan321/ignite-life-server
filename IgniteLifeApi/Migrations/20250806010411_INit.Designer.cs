@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IgniteLifeApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250802124726_AddDesc")]
-    partial class AddDesc
+    [Migration("20250806010411_INit")]
+    partial class INit
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -31,6 +31,9 @@ namespace IgniteLifeApi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -38,6 +41,9 @@ namespace IgniteLifeApi.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
