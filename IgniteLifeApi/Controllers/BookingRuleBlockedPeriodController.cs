@@ -21,19 +21,16 @@ public class BookingRuleBlockedPeriodController(BookingRuleBlockedPeriodService 
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateBookingRuleBlockedPeriodRequest dto)
+    public async Task<IActionResult> Create([FromBody] CreateBookingRuleBlockedPeriodDto dto)
     {
         var result = await _service.CreateBlockedPeriodAsync(dto);
         return ServiceResultToActionResult.ToActionResult(this, result);
     }
 
     [HttpPatch("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBookingRuleBlockedPeriodRequest dto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBookingRuleBlockedPeriodDto dto)
     {
-        if (id != dto.Id)
-            return BadRequest(new { error = "ID in URL does not match ID in body." });
-
-        var result = await _service.UpdateBlockedPeriodAsync(dto);
+        var result = await _service.UpdateBlockedPeriodAsync(id, dto);
         return ServiceResultToActionResult.ToActionResult(this, result);
     }
 

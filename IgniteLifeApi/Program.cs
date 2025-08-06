@@ -1,6 +1,5 @@
 using FluentValidation;
 using IgniteLifeApi.Application.Services.Implementations;
-using IgniteLifeApi.Application.Validators.BookingRuleBlockedPeriod;
 using IgniteLifeApi.Controllers.Common.Transformers;
 using IgniteLifeApi.Infrastructure.Data;
 using IgniteLifeApi.Middleware;
@@ -22,10 +21,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<BookingRuleBlockedPeriodService>();
 
 // FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRuleBlockedPeriodRequestValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingRuleBlockedPeriodRequestValidator>();
-
-// AutoValidation for FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddFluentValidationAutoValidation();
 
 

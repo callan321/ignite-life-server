@@ -3,6 +3,7 @@ using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
 using IgniteLifeApi.Controllers;
 using IgniteLifeApi.Tests.TestInfrastructure;
 using IgniteLifeApi.Tests.Utilities;
+using Microsoft.AspNetCore.Http.HttpResults;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -18,7 +19,7 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task PatchBlockedPeriod_ShouldUpdateSuccessfully()
         {
             // Arrange
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(700),
                 EndDateTime = DateTime.UtcNow.AddDays(702),
@@ -33,9 +34,8 @@ namespace IgniteLifeApi.Tests.Controllers
             created.Should().NotBeNull();
 
             // PATCH
-            var updateDto = new UpdateBookingRuleBlockedPeriodRequest
+            var updateDto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = created.Id,
                 StartDateTime = created.StartDateTime.AddDays(1),
                 EndDateTime = created.EndDateTime.AddDays(1),
                 Description = "Updated Block"
@@ -77,13 +77,13 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task OverlappingBlockedPeriods_ShouldReturnConflict()
         {
             // Arrange
-            var dto1 = new CreateBookingRuleBlockedPeriodRequest
+            var dto1 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(800),
                 EndDateTime = DateTime.UtcNow.AddDays(802),
                 Description = "First Block"
             };
-            var dto2 = new CreateBookingRuleBlockedPeriodRequest
+            var dto2 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(801),
                 EndDateTime = DateTime.UtcNow.AddDays(803),
@@ -117,19 +117,18 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task CreateBlockedPeriod_ShouldReturnBadRequest_WhenDtoIsNull()
         {
             // Arrange
-            CreateBookingRuleBlockedPeriodRequest? dto = null;
+            CreateBookingRuleBlockedPeriodDto? dto = null;
             // Act
             var response = await _client.PostAsJsonAsync(_baseUrl, dto);
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
         }
 
         [Fact]
         public async Task CreateBlockedPeriod_ShouldReturnBadRequest_WhenStartTimeIsAfterEndTime()
         {
             // Arrange
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(10),
                 EndDateTime = DateTime.UtcNow.AddDays(5),
@@ -145,15 +144,14 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task UpdateBlockedPeriod_ShouldReturnNotFound_WhenIdDoesNotExist()
         {
             // Arrange
-            var dto = new UpdateBookingRuleBlockedPeriodRequest
+            var dto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = Guid.NewGuid(),
                 StartDateTime = DateTime.UtcNow.AddDays(10),
                 EndDateTime = DateTime.UtcNow.AddDays(12),
                 Description = "Non-existent Block"
             };
             // Act
-            var response = await _client.PatchAsJsonAsync($"{_baseUrl}/{dto.Id}", dto);
+            var response = await _client.PatchAsJsonAsync($"{_baseUrl}/{Guid.NewGuid()}", dto);
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
@@ -162,7 +160,7 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task UpdateBlockedPeriod_ShouldReturnBadRequest_WhenDtoIsNull()
         {
             // Arrange
-            UpdateBookingRuleBlockedPeriodRequest? dto = null;
+            UpdateBookingRuleBlockedPeriodDto? dto = null;
             // Act
             var response = await _client.PatchAsJsonAsync($"{_baseUrl}/some-id", dto);
             // Assert
@@ -173,13 +171,13 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task UpdateBlockedPeriod_ShouldReturnConflict_WhenOverlappingWithExistingPeriod()
         {
             // Arrange
-            var createDto = new CreateBookingRuleBlockedPeriodRequest
+            var createDto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(900),
                 EndDateTime = DateTime.UtcNow.AddDays(902),
                 Description = "Original Block"
             };
-            var overlapDto = new CreateBookingRuleBlockedPeriodRequest
+            var overlapDto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(910),
                 EndDateTime = DateTime.UtcNow.AddDays(920),
@@ -197,9 +195,8 @@ namespace IgniteLifeApi.Tests.Controllers
             blockResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
             // Attempt to update with overlapping period
-            var updateDto = new UpdateBookingRuleBlockedPeriodRequest
+            var updateDto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = created.Id,
                 StartDateTime = DateTime.UtcNow.AddDays(911),
                 EndDateTime = DateTime.UtcNow.AddDays(912),
                 Description = "Overlapping Update Block"
@@ -216,7 +213,7 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task PatchBlockedPeriod_ShouldUpdateOnlyDescription()
         {
             // Arrange
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(1000),
                 EndDateTime = DateTime.UtcNow.AddDays(1002),
@@ -230,9 +227,8 @@ namespace IgniteLifeApi.Tests.Controllers
             created.Should().NotBeNull();
 
             // PATCH only description
-            var updateDto = new UpdateBookingRuleBlockedPeriodRequest
+            var updateDto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = created.Id,
                 Description = "Updated Desc"
             };
 
@@ -254,13 +250,13 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task GetAllBlockedPeriods_ShouldReturnInAscendingOrder()
         {
             // Arrange
-            var dto1 = new CreateBookingRuleBlockedPeriodRequest
+            var dto1 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(2000),
                 EndDateTime = DateTime.UtcNow.AddDays(2002),
                 Description = "Earlier"
             };
-            var dto2 = new CreateBookingRuleBlockedPeriodRequest
+            var dto2 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(2010),
                 EndDateTime = DateTime.UtcNow.AddDays(2012),
@@ -299,13 +295,13 @@ namespace IgniteLifeApi.Tests.Controllers
         {
             // Arrange
             var start = DateTime.UtcNow.AddDays(3000);
-            var dto1 = new CreateBookingRuleBlockedPeriodRequest
+            var dto1 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = start,
                 EndDateTime = start.AddDays(1),
                 Description = "First"
             };
-            var dto2 = new CreateBookingRuleBlockedPeriodRequest
+            var dto2 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = start.AddDays(1),
                 EndDateTime = start.AddDays(2),
@@ -331,7 +327,7 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task CreateAndUpdateBlockedPeriod_ShouldAllowMissingDescription()
         {
             // CREATE without description
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(4000),
                 EndDateTime = DateTime.UtcNow.AddDays(4002),
@@ -346,9 +342,8 @@ namespace IgniteLifeApi.Tests.Controllers
             created.Description.Should().BeNull();
 
             // UPDATE without description
-            var updateDto = new UpdateBookingRuleBlockedPeriodRequest
+            var updateDto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = created.Id,
                 StartDateTime = created.StartDateTime.AddHours(1),
                 EndDateTime = created.EndDateTime.AddHours(1),
                 Description = null
@@ -369,16 +364,19 @@ namespace IgniteLifeApi.Tests.Controllers
         [Fact]
         public async Task UpdateBlockedPeriod_ShouldReturnBadRequest_WhenIdMismatch()
         {
-            var dto = new UpdateBookingRuleBlockedPeriodRequest
+            // Arrange
+            var dto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = Guid.NewGuid(),
-                StartDateTime = DateTime.UtcNow.AddDays(5),
-                EndDateTime = DateTime.UtcNow.AddDays(6),
+                StartDateTime = DateTime.UtcNow.AddDays(255),
+                EndDateTime = DateTime.UtcNow.AddDays(256),
                 Description = "Test mismatch"
             };
 
+            // Act
             var response = await _client.PatchAsJsonAsync($"{_baseUrl}/{Guid.NewGuid()}", dto);
-            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         [Fact]
@@ -398,26 +396,10 @@ namespace IgniteLifeApi.Tests.Controllers
         }
 
         [Fact]
-        public async Task CreateBlockedPeriod_ShouldHandleLargeDescription()
-        {
-            var dto = new CreateBookingRuleBlockedPeriodRequest
-            {
-                StartDateTime = DateTime.UtcNow.AddDays(7000),
-                EndDateTime = DateTime.UtcNow.AddDays(7001),
-                Description = new string('A', 10_000) // overly large string
-            };
-
-            var response = await _client.PostAsJsonAsync(_baseUrl, dto);
-            // Depending on how your model validation is set up, this could be OK or BadRequest
-            response.StatusCode.Should().Match(status => status == HttpStatusCode.Created || status == HttpStatusCode.BadRequest);
-        }
-
-
-        [Fact]
         public async Task CreateBlockedPeriod_ShouldReturnBadRequest_WhenDescriptionExceedsMaxLength()
         {
             // Arrange
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(300),
                 EndDateTime = DateTime.UtcNow.AddDays(302),
@@ -470,7 +452,8 @@ namespace IgniteLifeApi.Tests.Controllers
         [Fact]
         public async Task PatchBlockedPeriod_WithNoChanges_ShouldReturnSameData()
         {
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            // Arrange - Create a new blocked period
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(20),
                 EndDateTime = DateTime.UtcNow.AddDays(21),
@@ -478,27 +461,32 @@ namespace IgniteLifeApi.Tests.Controllers
             };
             var create = await _client.PostAsJsonAsync(_baseUrl, dto);
             var created = await create.Content.ReadFromJsonAsync<BookingRuleBlockedPeriodDto>();
+            created.Should().NotBeNull();
 
-            var updateDto = new UpdateBookingRuleBlockedPeriodRequest
+            // Act - Send a PATCH request with no actual changes
+            var updateDto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Id = created!.Id,
                 StartDateTime = created.StartDateTime,
                 EndDateTime = created.EndDateTime,
                 Description = created.Description
             };
             var patch = await _client.PatchAsJsonAsync($"{_baseUrl}/{created.Id}", updateDto);
             patch.StatusCode.Should().Be(HttpStatusCode.OK);
+
             var updated = await patch.Content.ReadFromJsonAsync<BookingRuleBlockedPeriodDto>();
 
+            // Assert - Ensure the returned object is the same as the original
             updated.Should().BeEquivalentTo(created);
 
+            // Cleanup - Delete the test data
             await _client.DeleteAsync($"{_baseUrl}/{created.Id}");
         }
 
         [Fact]
         public async Task DeletedBlockedPeriod_ShouldNotAppearInGetAll()
         {
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            // Arrange - Create a new blocked period
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = DateTime.UtcNow.AddDays(10),
                 EndDateTime = DateTime.UtcNow.AddDays(11),
@@ -506,10 +494,13 @@ namespace IgniteLifeApi.Tests.Controllers
             };
             var create = await _client.PostAsJsonAsync(_baseUrl, dto);
             var created = await create.Content.ReadFromJsonAsync<BookingRuleBlockedPeriodDto>();
+            created.Should().NotBeNull();
 
+            // Act - Delete the created blocked period
             var delete = await _client.DeleteAsync($"{_baseUrl}/{created!.Id}");
             delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+            // Assert - Fetch all blocked periods and ensure the deleted one is not present
             var get = await _client.GetAsync(_baseUrl);
             var periods = await get.Content.ReadFromJsonAsync<List<BookingRuleBlockedPeriodDto>>();
             periods.Should().NotContain(p => p.Id == created.Id);
@@ -522,7 +513,7 @@ namespace IgniteLifeApi.Tests.Controllers
             var start = DateTime.UtcNow.AddDays(6000);
             var end = start.AddDays(1);
 
-            var dto = new CreateBookingRuleBlockedPeriodRequest
+            var dto = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = start,
                 EndDateTime = end,
@@ -550,13 +541,13 @@ namespace IgniteLifeApi.Tests.Controllers
         public async Task ConcurrentCreates_ShouldAllowOnlyOne_WhenPeriodsOverlap()
         {
             var start = DateTime.UtcNow.AddDays(900);
-            var dto1 = new CreateBookingRuleBlockedPeriodRequest
+            var dto1 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = start,
                 EndDateTime = start.AddDays(4),
                 Description = "Concurrent Block 1"
             };
-            var dto2 = new CreateBookingRuleBlockedPeriodRequest
+            var dto2 = new CreateBookingRuleBlockedPeriodDto
             {
                 StartDateTime = start.AddDays(1),
                 EndDateTime = start.AddDays(3),
@@ -577,6 +568,40 @@ namespace IgniteLifeApi.Tests.Controllers
             var created = await createdResponse.Content.ReadFromJsonAsync<BookingRuleBlockedPeriodDto>();
 
             await _client.DeleteAsync($"{_baseUrl}/{created!.Id}");
+        }
+
+        [Fact]
+        public async Task UpdateBlockedPeriod_ShouldReturnBadRequest_WhenEndTimeBeforeStartTime()
+        {
+            // Arrange - create a valid blocked period first
+            var createDto = new CreateBookingRuleBlockedPeriodDto
+            {
+                StartDateTime = DateTime.UtcNow.AddDays(50),
+                EndDateTime = DateTime.UtcNow.AddDays(55),
+                Description = "Invalid Update Test"
+            };
+
+            var createResponse = await _client.PostAsJsonAsync(_baseUrl, createDto);
+            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+            var created = await createResponse.Content.ReadFromJsonAsync<BookingRuleBlockedPeriodDto>();
+            created.Should().NotBeNull();
+
+            // Act - attempt to update with EndDateTime before StartDateTime
+            var updateDto = new UpdateBookingRuleBlockedPeriodDto
+            {
+                EndDateTime = DateTime.UtcNow.AddDays(49),
+                Description = created.Description
+            };
+
+            var patchResponse = await _client.PatchAsJsonAsync($"{_baseUrl}/{created.Id}", updateDto);
+
+            // Assert
+            patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+            // Cleanup
+            var deleteResponse = await _client.DeleteAsync($"{_baseUrl}/{created.Id}");
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
     }
 }

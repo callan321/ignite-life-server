@@ -3,10 +3,10 @@ using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
 
 namespace IgniteLifeApi.Application.Validators.BookingRuleBlockedPeriod
 {
-    public class CreateBookingRuleBlockedPeriodRequestValidator
-        : AbstractValidator<CreateBookingRuleBlockedPeriodRequest>
+    public class CreateBookingRuleBlockedPeriodDtoValidator
+        : AbstractValidator<CreateBookingRuleBlockedPeriodDto>
     {
-        public CreateBookingRuleBlockedPeriodRequestValidator()
+        public CreateBookingRuleBlockedPeriodDtoValidator()
         {
             RuleFor(x => x.StartDateTime)
                 .NotNull().WithMessage("Start time is required.");
