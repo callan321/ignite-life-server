@@ -1,10 +1,10 @@
 ﻿using IgniteLifeApi.Application.Dtos.Auth;
 using IgniteLifeApi.Application.Services.Interfaces;
-using IgniteLifeApi.Controllers.Common.Attributes;
+using IgniteLifeApi.Presentation.OpenApi.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace IgniteLifeApi.Controllers
+namespace IgniteLifeApi.Presentation.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

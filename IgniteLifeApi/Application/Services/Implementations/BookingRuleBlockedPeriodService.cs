@@ -12,7 +12,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
         public async Task<ServiceResult<List<BookingRuleBlockedPeriodDto>>> GetAllBookingRuleBlockedPeriodsAsync()
         {
-            var blockedPeriods = await _dbContext.BookingRuleBlockedPeriod
+            var blockedPeriods = await _dbContext.BookingRuleBlockedPeriods
                 .OrderBy(b => b.StartDateTime)
                 .ToListAsync();
 
@@ -33,7 +33,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 Description = NormalizeDescription(dto.Description)
             };
 
-            _dbContext.BookingRuleBlockedPeriod.Add(entity);
+            _dbContext.BookingRuleBlockedPeriods.Add(entity);
             await _dbContext.SaveChangesAsync();
 
             return ServiceResult<BookingRuleBlockedPeriodDto>.CreatedResult(MapToDto(entity), "Blocked period created.");
@@ -41,7 +41,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
         public async Task<ServiceResult<BookingRuleBlockedPeriodDto>> UpdateBlockedPeriodAsync(Guid id, UpdateBookingRuleBlockedPeriodDto dto)
         {
-            var entity = await _dbContext.BookingRuleBlockedPeriod.FindAsync(id);
+            var entity = await _dbContext.BookingRuleBlockedPeriods.FindAsync(id);
             if (entity == null)
                 return ServiceResult<BookingRuleBlockedPeriodDto>.NotFound("Blocked period not found.");
 
@@ -60,11 +60,11 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
         public async Task<ServiceResult<bool>> DeleteBlockedPeriodAsync(Guid id)
         {
-            var entity = await _dbContext.BookingRuleBlockedPeriod.FindAsync(id);
+            var entity = await _dbContext.BookingRuleBlockedPeriods.FindAsync(id);
             if (entity == null)
                 return ServiceResult<bool>.NotFound("Blocked period not found.");
 
-            _dbContext.BookingRuleBlockedPeriod.Remove(entity);
+            _dbContext.BookingRuleBlockedPeriods.Remove(entity);
             await _dbContext.SaveChangesAsync();
 
             return ServiceResult<bool>.NoContentResult("Blocked period deleted.");
@@ -82,7 +82,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
         private async Task<bool> IsOverlappingWithExistingAsync(DateTime start, DateTime end, Guid? excludeId = null)
         {
-            return await _dbContext.BookingRuleBlockedPeriod.AnyAsync(b =>
+            return await _dbContext.BookingRuleBlockedPeriods.AnyAsync(b =>
                 (excludeId == null || b.Id != excludeId) && b.StartDateTime < end && start < b.EndDateTime);
         }
 

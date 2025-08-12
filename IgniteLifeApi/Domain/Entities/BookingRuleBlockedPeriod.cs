@@ -1,4 +1,4 @@
-﻿using IgniteLifeApi.Domain.Models.Common;
+﻿using IgniteLifeApi.Domain.Entities.Common;
 
 namespace IgniteLifeApi.Domain.Entities
 {

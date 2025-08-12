@@ -3,6 +3,7 @@ using System;
 using IgniteLifeApi.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IgniteLifeApi.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250812090930_RefreshTokenRotation")]
+    partial class RefreshTokenRotation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -129,7 +132,7 @@ namespace IgniteLifeApi.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BookingRuleBlockedPeriods");
+                    b.ToTable("BookingRuleBlockedPeriod");
                 });
 
             modelBuilder.Entity("IgniteLifeApi.Domain.Entities.BookingRuleOpeningHour", b =>
@@ -215,7 +218,7 @@ namespace IgniteLifeApi.Infrastructure.Data.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("BookingServiceTypes");
+                    b.ToTable("BookingServiceType");
                 });
 
             modelBuilder.Entity("IgniteLifeApi.Domain.Entities.RefreshToken", b =>
@@ -268,7 +271,7 @@ namespace IgniteLifeApi.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshToken");
                 });
 
             modelBuilder.Entity("IgniteLifeApi.Domain.Entities.Booking", b =>

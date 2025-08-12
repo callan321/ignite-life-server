@@ -1,6 +1,6 @@
-﻿using IgniteLifeApi.Domain.Models.Interfaces;
+﻿using IgniteLifeApi.Domain.Interfaces;
 
-namespace IgniteLifeApi.Domain.Models.Common
+namespace IgniteLifeApi.Domain.Entities.Common
 {
     public class BaseEntity : IHasTimestamps
     {

@@ -1,8 +1,8 @@
-﻿using IgniteLifeApi.Controllers.Common.Attributes;
+﻿using IgniteLifeApi.Presentation.OpenApi.Attributes;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi.Models;
 
-namespace IgniteLifeApi.Controllers.Common.Transformers;
+namespace IgniteLifeApi.Presentation.OpenApi.Transformers;
 
 /// <summary>
 /// An OpenAPI operation transformer that restricts media types to application/json

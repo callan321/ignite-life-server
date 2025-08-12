@@ -3,6 +3,6 @@
     public class RefreshTokenDto
     {
         public string Token { get; set; } = string.Empty;
-        public DateTime Expiry { get; set; }
+        public DateTime ExpiresAt { get; set; }
     }
 }

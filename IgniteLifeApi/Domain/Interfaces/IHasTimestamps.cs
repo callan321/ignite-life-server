@@ -1,4 +1,4 @@
-﻿namespace IgniteLifeApi.Domain.Models.Interfaces
+﻿namespace IgniteLifeApi.Domain.Interfaces
 {
     public interface IHasTimestamps
     {

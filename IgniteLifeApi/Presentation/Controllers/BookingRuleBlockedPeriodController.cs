@@ -1,9 +1,9 @@
 ﻿using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
 using IgniteLifeApi.Application.Services.Implementations;
-using IgniteLifeApi.Controllers.Common;
+using IgniteLifeApi.Presentation.Controllers.Common;
 using Microsoft.AspNetCore.Mvc;
 
-namespace IgniteLifeApi.Controllers;
+namespace IgniteLifeApi.Presentation.Controllers;
 
 [ApiController]
 [Produces("application/json")]

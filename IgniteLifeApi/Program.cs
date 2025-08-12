@@ -1,8 +1,9 @@
 using FluentValidation;
 using IgniteLifeApi.Application.Services.Implementations;
-using IgniteLifeApi.Controllers.Common.Transformers;
+using IgniteLifeApi.Infrastructure.Configuration;
 using IgniteLifeApi.Infrastructure.Data;
-using IgniteLifeApi.Middleware;
+using IgniteLifeApi.Presentation.Middleware;
+using IgniteLifeApi.Presentation.OpenApi.Transformers;
 using Microsoft.EntityFrameworkCore;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
@@ -23,6 +24,13 @@ builder.Services.AddScoped<BookingRuleBlockedPeriodService>();
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddFluentValidationAutoValidation();
+
+// Token service
+builder.Services.AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection("JwtSettings"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 
 
 // OpenAPI configuration

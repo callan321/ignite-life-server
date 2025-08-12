@@ -1,4 +1,4 @@
-﻿namespace IgniteLifeApi.Controllers.Common.Attributes;
+﻿namespace IgniteLifeApi.Presentation.OpenApi.Attributes;
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public sealed class ProducesAuthCookiesAttribute : Attribute { }
