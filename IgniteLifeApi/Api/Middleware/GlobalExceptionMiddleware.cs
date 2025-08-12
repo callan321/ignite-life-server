@@ -1,4 +1,4 @@
-﻿namespace IgniteLifeApi.Presentation.Middleware
+﻿namespace IgniteLifeApi.Api.Middleware
 {
     public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
     {

@@ -1,7 +1,7 @@
 ﻿using IgniteLifeApi.Application.Services.Common;
 using Microsoft.AspNetCore.Mvc;
 
-namespace IgniteLifeApi.Presentation.Controllers.Common
+namespace IgniteLifeApi.Api.Controllers.Common
 {
     public static class ServiceResultToActionResult
     {

@@ -7,24 +7,21 @@ using Microsoft.AspNetCore.Identity;
 
 namespace IgniteLifeApi.Application.Services.Implementations
 {
-    public class AuthService(
-        UserManager<AdminUser> userManager,
-        SignInManager<AdminUser> signInManager,
-        ITokenService tokenService
-        ) : IAuthService
+    public class AuthService : IAuthService
     {
-        private readonly UserManager<AdminUser> _userManager = userManager;
-        private readonly SignInManager<AdminUser> _signInManager = signInManager;
-        private readonly ITokenService _tokenService = tokenService;
+        private readonly UserManager<AdminUser> _userManager;
+        private readonly SignInManager<AdminUser> _signInManager;
+        private readonly ITokenService _tokenService;
 
-        public Task<ServiceResult<Unit>> ForgotPasswordAsync(ForgotPasswordRequest request)
+        public AuthService(
+            UserManager<AdminUser> userManager,
+            SignInManager<AdminUser> signInManager,
+            ITokenService tokenService
+        )
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId)
-        {
-            throw new NotImplementedException();
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _tokenService = tokenService;
         }
 
         public async Task<ServiceResult<TokenResponse>> LoginAsync(LoginRequest request)
@@ -40,32 +37,43 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 request.Password,
                 lockoutOnFailure: true
             );
-
             if (!signInResult.Succeeded)
                 return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
             // Generate JWT + Refresh token
             var tokenResponse = await _tokenService.GenerateTokensAsync(user, request.RememberMe);
 
-            // TODO - Implement RefreshToken entity and persist it in the database
-            // Add tokens to db in user and on table   
-            // user.RefreshTokens = tokenResponse.RefreshToken
-            // user.RefreshTokens.Add();
-
+            // Update user last login time
             await _userManager.UpdateAsync(user);
 
             return ServiceResult<TokenResponse>.SuccessResult(tokenResponse);
         }
 
-
-        public Task<ServiceResult<Unit>> LogoutAsync(string refreshToken)
+        public async Task<ServiceResult<Unit>> LogoutAsync(string refreshToken)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return ServiceResult<Unit>.BadRequest("Refresh token is required.");
+
+            await _tokenService.RevokeRefreshTokenAsync(refreshToken);
+
+            await _signInManager.SignOutAsync();
+
+            return ServiceResult<Unit>.NoContentResult();
         }
 
-        public Task<ServiceResult<Unit>> ResetPasswordAsync(ResetPasswordRequest request)
+        public Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var user = _userManager.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null)
+                return Task.FromResult(ServiceResult<AuthStatusResponse>.NotFound("User not found."));
+
+            var response = new AuthStatusResponse
+            {
+                UserId = user.Id,
+                Email = user.Email,
+            };
+
+            return Task.FromResult(ServiceResult<AuthStatusResponse>.SuccessResult(response));
         }
     }
 }

@@ -1,8 +1,8 @@
-﻿using IgniteLifeApi.Presentation.OpenApi.Attributes;
+﻿using IgniteLifeApi.Api.OpenApi.Attributes;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi.Models;
 
-namespace IgniteLifeApi.Presentation.OpenApi.Transformers;
+namespace IgniteLifeApi.Api.OpenApi.Transformers;
 
 public class AuthCookieOperationTransformer : IOpenApiOperationTransformer
 {

@@ -13,8 +13,8 @@ namespace IgniteLifeApi.Infrastructure.Configuration
         [Range(1, int.MaxValue)] public int RememberMeRefreshTokenExpiryDays { get; set; } = 30;
 
         // Cookies
-        public string AccessTokenCookieName { get; set; } = "access_token";
-        public string RefreshTokenCookieName { get; set; } = "refresh_token";
+        [Required] public string AccessTokenCookieName { get; set; } = "access_token";
+        [Required] public string RefreshTokenCookieName { get; set; } = "refresh_token";
         public string CookiePath { get; set; } = "/";
         public string? CookieDomain { get; set; }
     }

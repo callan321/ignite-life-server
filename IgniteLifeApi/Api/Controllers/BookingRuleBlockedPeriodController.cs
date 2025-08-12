@@ -1,17 +1,22 @@
 ﻿using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
 using IgniteLifeApi.Application.Services.Implementations;
-using IgniteLifeApi.Presentation.Controllers.Common;
+using IgniteLifeApi.Api.Controllers.Common;
 using Microsoft.AspNetCore.Mvc;
 
-namespace IgniteLifeApi.Presentation.Controllers;
+namespace IgniteLifeApi.Api.Controllers;
 
 [ApiController]
 [Produces("application/json")]
 [Consumes("application/json")]
 [Route("api/[controller]")]
-public class BookingRuleBlockedPeriodController(BookingRuleBlockedPeriodService service) : ControllerBase
+public class BookingRuleBlockedPeriodController : ControllerBase
 {
-    private readonly BookingRuleBlockedPeriodService _service = service;
+    private readonly BookingRuleBlockedPeriodService _service;
+
+    public BookingRuleBlockedPeriodController(BookingRuleBlockedPeriodService service)
+    {
+        _service = service;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()

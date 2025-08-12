@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
+using IgniteLifeApi.Api.Controllers;
 using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
-using IgniteLifeApi.Presentation.Controllers;
 using IgniteLifeApi.Tests.TestInfrastructure;
 using IgniteLifeApi.Tests.Utilities;
 using Microsoft.AspNetCore.Http.HttpResults;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi.Models;
 
-namespace IgniteLifeApi.Presentation.OpenApi.Transformers;
+namespace IgniteLifeApi.Api.OpenApi.Transformers;
 
 public class CookieAuthDocumentTransformer : IOpenApiDocumentTransformer
 {
