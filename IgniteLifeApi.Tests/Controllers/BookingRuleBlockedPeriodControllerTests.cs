@@ -3,17 +3,21 @@ using IgniteLifeApi.Api.Controllers;
 using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
 using IgniteLifeApi.Tests.TestInfrastructure;
 using IgniteLifeApi.Tests.Utilities;
-using Microsoft.AspNetCore.Http.HttpResults;
 using System.Net;
 using System.Net.Http.Json;
 
 namespace IgniteLifeApi.Tests.Controllers
 {
     [Collection("IntegrationTests")]
-    public class BookingRuleBlockedPeriodControllerTests(ApiPostgresTestApplicationFactory factory)
+    public class BookingRuleBlockedPeriodControllerTests
     {
-        private readonly HttpClient _client = factory.CreateClient();
+        private readonly HttpClient _client;
         private readonly string _baseUrl = ApiRoutes.ForController<BookingRuleBlockedPeriodController>();
+
+        public BookingRuleBlockedPeriodControllerTests(ApiPostgresTestApplicationFactory factory)
+        {
+            _client = factory.CreateClient();
+        }
 
         [Fact]
         public async Task PatchBlockedPeriod_ShouldUpdateSuccessfully()

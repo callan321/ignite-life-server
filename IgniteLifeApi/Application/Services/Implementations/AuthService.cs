@@ -4,6 +4,7 @@ using IgniteLifeApi.Application.Services.Common;
 using IgniteLifeApi.Application.Services.Interfaces;
 using IgniteLifeApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace IgniteLifeApi.Application.Services.Implementations
 {
@@ -26,12 +27,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
         public async Task<ServiceResult<TokenResponse>> LoginAsync(LoginRequest request)
         {
-            // Find admin by email
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
                 return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
-            // Validate password
             var signInResult = await _signInManager.CheckPasswordSignInAsync(
                 user,
                 request.Password,
@@ -40,12 +39,9 @@ namespace IgniteLifeApi.Application.Services.Implementations
             if (!signInResult.Succeeded)
                 return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
-            // Generate JWT + Refresh token
-            var tokenResponse = await _tokenService.GenerateTokensAsync(user, request.RememberMe);
-
-            // Update user last login time
             await _userManager.UpdateAsync(user);
 
+            var tokenResponse = await _tokenService.GenerateTokensAsync(user, request.RememberMe);
             return ServiceResult<TokenResponse>.SuccessResult(tokenResponse);
         }
 
@@ -55,17 +51,18 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 return ServiceResult<Unit>.BadRequest("Refresh token is required.");
 
             await _tokenService.RevokeRefreshTokenAsync(refreshToken);
-
             await _signInManager.SignOutAsync();
-
             return ServiceResult<Unit>.NoContentResult();
         }
 
-        public Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId)
+        public async Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId)
         {
-            var user = _userManager.Users.FirstOrDefault(u => u.Id == userId);
+            var user = await _userManager.Users
+                .AsNoTracking()
+                .SingleOrDefaultAsync(u => u.Id == userId);
+
             if (user == null)
-                return Task.FromResult(ServiceResult<AuthStatusResponse>.NotFound("User not found."));
+                return ServiceResult<AuthStatusResponse>.NotFound("User not found.");
 
             var response = new AuthStatusResponse
             {
@@ -73,7 +70,18 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 Email = user.Email,
             };
 
-            return Task.FromResult(ServiceResult<AuthStatusResponse>.SuccessResult(response));
+            return ServiceResult<AuthStatusResponse>.SuccessResult(response);
         }
+
+        public async Task<ServiceResult<Unit>> RefreshTokensAsync(string refreshToken)
+        {
+            var tokenResponse = await _tokenService.RefreshTokensAsync(refreshToken);
+
+            if (tokenResponse is null)
+                return ServiceResult<Unit>.Unauthorized("Invalid or expired refresh token.");
+
+            return ServiceResult<Unit>.SuccessResult(Unit.Value);
+        }
+
     }
 }

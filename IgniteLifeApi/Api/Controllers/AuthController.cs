@@ -1,10 +1,11 @@
-﻿using IgniteLifeApi.Application.Dtos.Auth;
-using IgniteLifeApi.Application.Services.Interfaces;
+﻿using IgniteLifeApi.Api.Controllers.Common;
 using IgniteLifeApi.Api.OpenApi.Attributes;
+using IgniteLifeApi.Application.Dtos.Auth;
+using IgniteLifeApi.Application.Services.Interfaces;
 using IgniteLifeApi.Infrastructure.Configuration;
-using IgniteLifeApi.Api.Controllers.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
@@ -27,6 +28,7 @@ namespace IgniteLifeApi.Api.Controllers
 
         [HttpPost("login")]
         [AllowAnonymous]
+        [EnableRateLimiting("auth")]
         [ProducesAuthCookies]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -39,12 +41,9 @@ namespace IgniteLifeApi.Api.Controllers
         [ProducesAuthCookies]
         public async Task<IActionResult> Logout()
         {
-            // Read refresh token from the HttpOnly cookie
-            var refreshToken = Request.Cookies[_jwt.RefreshTokenCookieName];
-
-            // If there’s no cookie, we can just return 204; nothing to revoke.
+            var refreshToken = GetRefreshToken();
             if (string.IsNullOrWhiteSpace(refreshToken))
-                return NoContent();
+                return NoContent(); // Nothing to revoke
 
             var result = await _authService.LogoutAsync(refreshToken);
             return ServiceResultToActionResult.ToActionResult(this, result);
@@ -56,13 +55,33 @@ namespace IgniteLifeApi.Api.Controllers
         [ProducesAuthCookies]
         public async Task<IActionResult> GetAuthStatus()
         {
-            // Grab the user id from the JWT (set in TokenService as ClaimTypes.NameIdentifier)
             var idValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!Guid.TryParse(idValue, out var userId))
                 return Unauthorized();
 
             var result = await _authService.GetUserStatusAsync(userId);
             return ServiceResultToActionResult.ToActionResult(this, result);
+        }
+
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        [RequiresAuthCookies]
+        [ProducesAuthCookies]
+        public async Task<IActionResult> RefreshTokens()
+        {
+            var refreshToken = GetRefreshToken();
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return NoContent();
+
+            var result = await _authService.RefreshTokensAsync(refreshToken);
+            return ServiceResultToActionResult.ToActionResult(this, result);
+        }
+
+        private string? GetRefreshToken()
+        {
+            return Request.Cookies.TryGetValue(_jwt.RefreshTokenCookieName, out var token) && !string.IsNullOrWhiteSpace(token)
+                ? token
+                : null;
         }
     }
 }

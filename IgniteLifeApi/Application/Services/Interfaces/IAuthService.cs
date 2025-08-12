@@ -9,5 +9,6 @@ namespace IgniteLifeApi.Application.Services.Interfaces
         Task<ServiceResult<TokenResponse>> LoginAsync(LoginRequest request);
         Task<ServiceResult<Unit>> LogoutAsync(string refreshToken);
         Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId);
+        Task<ServiceResult<Unit>> RefreshTokensAsync(string refreshToken);
     }
 }

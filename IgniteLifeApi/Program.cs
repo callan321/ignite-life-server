@@ -7,11 +7,14 @@ using IgniteLifeApi.Domain.Entities;
 using IgniteLifeApi.Infrastructure.Configuration;
 using IgniteLifeApi.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +42,8 @@ builder.Services.AddOptions<JwtSettings>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+var spaOrigin = builder.Configuration["Cors:SpaOrigin"]; // e.g. https://app.example
+
 // Identity (single admin user)
 builder.Services.AddIdentityCore<AdminUser>(o =>
 {
@@ -47,6 +52,11 @@ builder.Services.AddIdentityCore<AdminUser>(o =>
     o.Password.RequireUppercase = true;
     o.Password.RequireLowercase = true;
     o.Password.RequireNonAlphanumeric = true;
+
+    // Lockout so CheckPasswordSignInAsync(..., lockoutOnFailure:true) actually locks
+    o.Lockout.AllowedForNewUsers = true;
+    o.Lockout.MaxFailedAccessAttempts = 5;
+    o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -67,6 +77,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = true; // prod
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidIssuer = jwt.Issuer,
@@ -96,16 +107,55 @@ builder.Services
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("VerifiedUser", p => p.RequireAuthenticatedUser());
 
-
-// TODO CORS (set your SPA origin or disable while local)
+// CORS — credentials for SPA
 builder.Services.AddCors(o => o.AddPolicy("spa", p =>
 {
-    // p.WithOrigins("https://your-frontend.example")
-    //  .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-
-    // Development fallback (no credentials with wildcard):
-    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    if (!string.IsNullOrWhiteSpace(spaOrigin))
+    {
+        p.WithOrigins(spaOrigin)
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials();
+    }
+    else
+    {
+        // Dev fallback (no credentials across wildcard; useful for tools like Swagger UI),
+        // but your cookie-auth SPA **won't** work cross-site with this.
+        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    }
 }));
+
+// Rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("auth", httpContext =>
+    {
+        // partition key = caller IP (after forwarded-headers)
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,                   // 5 requests
+                Window = TimeSpan.FromMinutes(1),  // per minute
+                QueueLimit = 5,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            });
+    });
+});
+
+// CSRF (double-submit): register middleware dependencies (no DI needed)
+
+// Forwarded headers (read from proxies)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Consider adding KnownProxies/KnownNetworks in locked-down environments.
+});
 
 var app = builder.Build();
 
@@ -116,12 +166,31 @@ app.MapOpenApi();
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
 
+// Global error handling
 app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseHttpsRedirection();
 
+// HTTPS & HSTS
+app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
+// Forwarded headers MUST run before rate limiter so client IP is correct
+app.UseForwardedHeaders();
+
+// CORS early (before auth)
 app.UseCors("spa");
+
+// Rate limiter
+app.UseRateLimiter();
+
+// Authentication/Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// CSRF protection for unsafe methods that rely on cookie auth
+app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
 
 app.MapControllers();
 
