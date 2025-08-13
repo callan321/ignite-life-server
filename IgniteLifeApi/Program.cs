@@ -9,7 +9,6 @@ using IgniteLifeApi.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
@@ -19,7 +18,9 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers, health, OpenAPI
+// ===================================
+// Add Controllers, Health Checks, OpenAPI
+// ===================================
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi(options =>
@@ -29,35 +30,57 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<CookieAuthDocumentTransformer>();
 });
 
-// DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddFluentValidationAutoValidation();
-
-// Options
+// ===================================
+// Bind configuration to strongly-typed settings
+// ===================================
 builder.Services.AddOptions<JwtSettings>()
     .Bind(builder.Configuration.GetSection("JwtSettings"))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-var spaOrigin = builder.Configuration["Cors:SpaOrigin"]; // e.g. https://app.example
+builder.Services.AddOptions<IdentitySettings>()
+    .Bind(builder.Configuration.GetSection("IdentitySettings"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
-// Identity (single admin user)
+builder.Services.AddOptions<CorsSettings>()
+    .Bind(builder.Configuration.GetSection("Cors"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+// ===================================
+// Get settings instances
+// ===================================
+var jwt = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
+var identitySettings = builder.Configuration.GetSection("IdentitySettings").Get<IdentitySettings>()!;
+var corsSettings = builder.Configuration.GetSection("Cors").Get<CorsSettings>()!;
+
+// ===================================
+// Database Context
+// ===================================
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ===================================
+// FluentValidation
+// ===================================
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddFluentValidationAutoValidation();
+
+// ===================================
+// Identity Setup
+// ===================================
 builder.Services.AddIdentityCore<ApplicationUser>(o =>
 {
-    o.Password.RequiredLength = 12;
-    o.Password.RequireDigit = true;
-    o.Password.RequireUppercase = true;
-    o.Password.RequireLowercase = true;
-    o.Password.RequireNonAlphanumeric = true;
+    o.Password.RequiredLength = identitySettings.PasswordRequiredLength;
+    o.Password.RequireDigit = identitySettings.RequireDigit;
+    o.Password.RequireUppercase = identitySettings.RequireUppercase;
+    o.Password.RequireLowercase = identitySettings.RequireLowercase;
+    o.Password.RequireNonAlphanumeric = identitySettings.RequireNonAlphanumeric;
 
-    // Lockout so CheckPasswordSignInAsync(..., lockoutOnFailure:true) actually locks
-    o.Lockout.AllowedForNewUsers = true;
-    o.Lockout.MaxFailedAccessAttempts = 5;
-    o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    o.Lockout.AllowedForNewUsers = identitySettings.LockoutAllowedForNewUsers;
+    o.Lockout.MaxFailedAccessAttempts = identitySettings.LockoutMaxFailedAccessAttempts;
+    o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(identitySettings.LockoutDefaultLockoutMinutes);
 })
 .AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -65,20 +88,21 @@ builder.Services.AddIdentityCore<ApplicationUser>(o =>
 
 builder.Services.AddHttpContextAccessor();
 
-// App services
+// ===================================
+// Application Services
+// ===================================
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<BookingRuleService>(); // if used by controllers
+builder.Services.AddScoped<BookingRuleService>();
 
-// AuthN / AuthZ
-var jwt = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
-
+// ===================================
 // Authentication
+// ===================================
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = true; // prod
+        options.RequireHttpsMetadata = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidIssuer = jwt.Issuer,
@@ -92,7 +116,6 @@ builder.Services
             RoleClaimType = ClaimTypes.Role
         };
 
-        // Read JWT from HttpOnly cookie
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = ctx =>
@@ -105,50 +128,50 @@ builder.Services
         };
     });
 
-// Authorization policies
+// ===================================
+// Authorization Policies
+// ===================================
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("VerifiedUser", p =>
         p.RequireAuthenticatedUser()
          .RequireClaim("verified", "true"))
-
     .AddPolicy("AdminUser", p =>
         p.RequireAuthenticatedUser()
          .RequireClaim("isAdmin", "true"));
 
-// CORS — credentials for SPA
+// ===================================
+// CORS
+// ===================================
 builder.Services.AddCors(o => o.AddPolicy("spa", p =>
 {
-    if (!string.IsNullOrWhiteSpace(spaOrigin))
+    if (!string.IsNullOrWhiteSpace(corsSettings.SpaOrigin))
     {
-        p.WithOrigins(spaOrigin)
+        p.WithOrigins(corsSettings.SpaOrigin)
          .AllowAnyHeader()
          .AllowAnyMethod()
          .AllowCredentials();
     }
     else
     {
-        // Dev fallback (no credentials across wildcard; useful for tools like Swagger UI),
-        // but your cookie-auth SPA **won't** work cross-site with this.
         p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     }
 }));
 
-// Rate limiting
+// ===================================
+// Rate Limiting
+// ===================================
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
     options.AddPolicy("auth", httpContext =>
     {
-        // partition key = caller IP (after forwarded-headers)
         var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: ip,
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 5,                   // 5 requests
-                Window = TimeSpan.FromMinutes(1),  // per minute
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 5,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 AutoReplenishment = true
@@ -156,50 +179,36 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// CSRF (double-submit): register middleware dependencies (no DI needed)
-
-// Forwarded headers (read from proxies)
+// ===================================
+// Forwarded Headers
+// ===================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // Consider adding KnownProxies/KnownNetworks in locked-down environments.
 });
 
+// ===================================
+// Build App
+// ===================================
 var app = builder.Build();
 
-// OpenAPI
 app.MapOpenApi();
-
-// Health
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
 
-// Global error handling
 app.UseMiddleware<GlobalExceptionMiddleware>();
-
-// HTTPS & HSTS
 app.UseHttpsRedirection();
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 
-// Forwarded headers MUST run before rate limiter so client IP is correct
 app.UseForwardedHeaders();
-
-// CORS early (before auth)
 app.UseCors("spa");
-
-// Rate limiter
 app.UseRateLimiter();
-
-// Authentication/Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
-// CSRF protection for unsafe methods that rely on cookie auth
 app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
-
 app.MapControllers();
 
 app.Run();
