@@ -197,6 +197,7 @@ app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
 app.UseHttpsRedirection();
 if (!app.Environment.IsDevelopment())
 {
@@ -208,7 +209,6 @@ app.UseCors("spa");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<CsrfDoubleSubmitMiddleware>();
 app.MapControllers();
 
 app.Run();

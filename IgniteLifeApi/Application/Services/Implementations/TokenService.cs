@@ -35,13 +35,25 @@ namespace IgniteLifeApi.Application.Services.Implementations
             _users = users;
         }
 
-        // ------- New roles-only entrypoint (no IJwtUser) -------
+        /// <summary>
+        /// Generates new access + refresh tokens for a given user, including role claims.
+        /// </summary>
         public async Task<TokenResponse> GenerateTokensAsync(Guid userId, bool isPersistent, CancellationToken cancellationToken = default)
         {
-            var appUser = await _users.FindByIdAsync(userId.ToString()); // no cancellation overload
-            if (appUser is null) throw new InvalidOperationException("User not found.");
+            var appUser = await _users.FindByIdAsync(userId.ToString());
+            if (appUser is null)
+                throw new InvalidOperationException("User not found.");
 
-            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin"); // no cancellation overload
+            // Ensure the user has confirmed their email
+            if (!appUser.EmailConfirmed)
+                throw new InvalidOperationException("User email not confirmed.");
+
+            // Ensure the user is not locked out
+            if (appUser.LockoutEnabled && appUser.LockoutEnd.HasValue && appUser.LockoutEnd.Value.UtcDateTime > DateTime.UtcNow)
+                throw new InvalidOperationException("User account is locked.");
+
+            // Determine if user is in the Admin role
+            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
 
             var (accessToken, accessExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
 
@@ -52,12 +64,12 @@ namespace IgniteLifeApi.Application.Services.Implementations
             var rawRefresh = GenerateRefreshTokenRaw();
             var refreshHash = Hash(rawRefresh);
 
-            _db.Add(new RefreshToken
+            _db.RefreshTokens.Add(new RefreshToken
             {
                 UserId = appUser.Id,
                 TokenHash = refreshHash,
                 ExpiresAtUtc = refreshExp,
-                IsPersistent = isPersistent,
+                IsPersistent = isPersistent
             });
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -85,13 +97,24 @@ namespace IgniteLifeApi.Application.Services.Implementations
         public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             var entity = await FindRefresh(refreshToken, cancellationToken);
-            if (entity is null) return;
+            if (entity is null)
+            {
+                // Nothing to revoke, but we can still clear cookies for safety
+                ClearAuthCookies();
+                return;
+            }
 
-            entity.RevokedAtUtc = DateTime.UtcNow;
-            await _db.SaveChangesAsync(cancellationToken);
+            // Idempotent: only set once
+            if (entity.RevokedAtUtc is null)
+            {
+                entity.RevokedAtUtc = DateTime.UtcNow;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
 
+            // Always clear cookies, even if it was already revoked
             ClearAuthCookies();
         }
+
 
         public async Task<TokenResponse?> RefreshTokensAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
@@ -101,10 +124,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
             if (existing is null || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= DateTime.UtcNow)
                 return null;
 
-            var appUser = await _users.FindByIdAsync(existing.UserId.ToString()); // no cancellation overload
+            var appUser = await _users.FindByIdAsync(existing.UserId.ToString());
             if (appUser is null) return null;
 
-            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin"); // no cancellation overload
+            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
 
             var newRaw = GenerateRefreshTokenRaw();
             var newHash = Hash(newRaw);
@@ -120,7 +143,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 UserId = appUser.Id,
                 TokenHash = newHash,
                 ExpiresAtUtc = newExp,
-                IsPersistent = existing.IsPersistent,
+                IsPersistent = existing.IsPersistent
             });
 
             var (jwt, jwtExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
@@ -137,7 +160,9 @@ namespace IgniteLifeApi.Application.Services.Implementations
             };
         }
 
-        // ------- Token builder (pure, roles-first) -------
+        // =========================
+        // Token Generation
+        // =========================
         private (string token, DateTime expiresUtc) GenerateAccessToken(Guid userId, string? email, bool isAdmin)
         {
             var exp = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpiryMinutes);
@@ -149,7 +174,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
             };
 
             if (!string.IsNullOrWhiteSpace(email))
-                claims.Add(new Claim(ClaimTypes.Email, email!));
+                claims.Add(new Claim(ClaimTypes.Email, email));
 
             if (isAdmin)
             {
@@ -210,7 +235,9 @@ namespace IgniteLifeApi.Application.Services.Implementations
             return Convert.ToHexString(bytes);
         }
 
-        // ---------- Cookies ----------
+        // =========================
+        // Cookies
+        // =========================
         private CookieOptions BuildCookieOptions(DateTime expiresUtc)
         {
             var opts = new CookieOptions
@@ -221,8 +248,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 Path = string.IsNullOrWhiteSpace(_jwt.CookiePath) ? "/" : _jwt.CookiePath,
                 Expires = new DateTimeOffset(expiresUtc)
             };
+
             if (!string.IsNullOrWhiteSpace(_jwt.CookieDomain))
                 opts.Domain = _jwt.CookieDomain;
+
             return opts;
         }
 
@@ -266,7 +295,8 @@ namespace IgniteLifeApi.Application.Services.Implementations
             var xsrfExpired = CsrfDoubleSubmitMiddleware.BuildCookieOptions(
                 DateTime.UtcNow.AddDays(-1),
                 _jwt.CookieDomain,
-                string.IsNullOrWhiteSpace(_jwt.CookiePath) ? "/" : _jwt.CookiePath);
+                string.IsNullOrWhiteSpace(_jwt.CookiePath) ? "/" : _jwt.CookiePath
+            );
             ctx.Response.Cookies.Append(CsrfDoubleSubmitMiddleware.CsrfCookieName, string.Empty, xsrfExpired);
         }
     }

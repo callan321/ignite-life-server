@@ -1,17 +1,22 @@
 ﻿using IgniteLifeApi.Domain.Entities;
 using IgniteLifeApi.Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 namespace IgniteLifeApi.Infrastructure.Data
 {
-    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+    public class ApplicationDbContext
+        : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
     {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options) { }
+
         public DbSet<BookingRuleOpeningHour> BookingRuleOpeningHours { get; set; } = null!;
         public DbSet<BookingRuleBlockedPeriod> BookingRuleBlockedPeriods { get; set; } = null!;
         public DbSet<BookingRules> BookingRules { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
-        public DbSet<ApplicationUser> AdminUsers { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,18 +47,15 @@ namespace IgniteLifeApi.Infrastructure.Data
                     case EntityState.Added:
                         if (entry.Entity.CreatedAtUtc == default)
                             entry.Entity.CreatedAtUtc = now;
-
                         entry.Entity.UpdatedAtUtc = now;
                         break;
 
                     case EntityState.Modified:
-                        // Keep original CreatedAtUtc intact
                         entry.Property(e => e.CreatedAtUtc).IsModified = false;
                         entry.Entity.UpdatedAtUtc = now;
                         break;
                 }
             }
         }
-
     }
 }
