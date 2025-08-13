@@ -30,22 +30,22 @@ namespace IgniteLifeApi.Api.Controllers
         [AllowAnonymous]
         [EnableRateLimiting("auth")]
         [ProducesAuthCookies]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
-            var result = await _authService.LoginAsync(request);
+            var result = await _authService.LoginAsync(request, cancellationToken);
             return ServiceResultToActionResult.ToActionResult(this, result);
         }
 
         [HttpPost("logout")]
         [Authorize(Policy = "VerifiedUser")]
         [ProducesAuthCookies]
-        public async Task<IActionResult> Logout()
+        public async Task<IActionResult> Logout(CancellationToken cancellationToken)
         {
             var refreshToken = GetRefreshToken();
             if (string.IsNullOrWhiteSpace(refreshToken))
                 return NoContent();
 
-            var result = await _authService.LogoutAsync(refreshToken);
+            var result = await _authService.LogoutAsync(refreshToken!, cancellationToken);
             return ServiceResultToActionResult.ToActionResult(this, result);
         }
 
@@ -53,13 +53,13 @@ namespace IgniteLifeApi.Api.Controllers
         [Authorize(Policy = "VerifiedUser")]
         [RequiresAuthCookies]
         [ProducesAuthCookies]
-        public async Task<IActionResult> GetAuthStatus()
+        public async Task<IActionResult> GetAuthStatus(CancellationToken cancellationToken)
         {
             var idValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!Guid.TryParse(idValue, out var userId))
                 return Unauthorized();
 
-            var result = await _authService.GetUserStatusAsync(userId);
+            var result = await _authService.GetUserStatusAsync(userId, cancellationToken);
             return ServiceResultToActionResult.ToActionResult(this, result);
         }
 
@@ -67,13 +67,13 @@ namespace IgniteLifeApi.Api.Controllers
         [AllowAnonymous]
         [RequiresAuthCookies]
         [ProducesAuthCookies]
-        public async Task<IActionResult> RefreshTokens()
+        public async Task<IActionResult> RefreshTokens(CancellationToken cancellationToken)
         {
             var refreshToken = GetRefreshToken();
             if (string.IsNullOrWhiteSpace(refreshToken))
                 return NoContent();
 
-            var result = await _authService.RefreshTokensAsync(refreshToken);
+            var result = await _authService.RefreshTokensAsync(refreshToken!, cancellationToken);
             return ServiceResultToActionResult.ToActionResult(this, result);
         }
 

@@ -3,6 +3,7 @@ using System;
 using IgniteLifeApi.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IgniteLifeApi.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250813074615_zzz")]
+    partial class zzz
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -122,7 +125,7 @@ namespace IgniteLifeApi.Infrastructure.Data.Migrations
                     b.Property<Guid>("BookingRulesId")
                         .HasColumnType("uuid");
 
-                    b.Property<TimeOnly>("CloseTimeUtc")
+                    b.Property<TimeOnly>("CloseTime")
                         .HasColumnType("time without time zone");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -134,7 +137,7 @@ namespace IgniteLifeApi.Infrastructure.Data.Migrations
                     b.Property<bool>("IsClosed")
                         .HasColumnType("boolean");
 
-                    b.Property<TimeOnly>("OpenTimeUtc")
+                    b.Property<TimeOnly>("OpenTime")
                         .HasColumnType("time without time zone");
 
                     b.Property<DateTime>("UpdatedAtUtc")

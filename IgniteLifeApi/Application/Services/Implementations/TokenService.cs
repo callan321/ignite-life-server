@@ -36,12 +36,12 @@ namespace IgniteLifeApi.Application.Services.Implementations
         }
 
         // ------- New roles-only entrypoint (no IJwtUser) -------
-        public async Task<TokenResponse> GenerateTokensAsync(Guid userId, bool isPersistent)
+        public async Task<TokenResponse> GenerateTokensAsync(Guid userId, bool isPersistent, CancellationToken cancellationToken = default)
         {
-            var appUser = await _users.FindByIdAsync(userId.ToString());
+            var appUser = await _users.FindByIdAsync(userId.ToString()); // no cancellation overload
             if (appUser is null) throw new InvalidOperationException("User not found.");
 
-            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
+            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin"); // no cancellation overload
 
             var (accessToken, accessExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
 
@@ -58,11 +58,9 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 TokenHash = refreshHash,
                 ExpiresAtUtc = refreshExp,
                 IsPersistent = isPersistent,
-                IpAddress = _http.HttpContext?.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = _http.HttpContext?.Request.Headers.UserAgent.ToString(),
             });
 
-            await _db.SaveChangesAsync();
+            await _db.SaveChangesAsync(cancellationToken);
 
             SetAccessCookie(accessToken, accessExp);
             SetRefreshCookie(rawRefresh, refreshExp);
@@ -78,35 +76,35 @@ namespace IgniteLifeApi.Application.Services.Implementations
         public ClaimsPrincipal? ValidateAccessToken(string token) =>
             ValidateToken(token, validateLifetime: true);
 
-        public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
+        public async Task<bool> ValidateRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
-            var entity = await FindRefresh(refreshToken);
+            var entity = await FindRefresh(refreshToken, cancellationToken);
             return entity is { RevokedAtUtc: null } && entity.ExpiresAtUtc > DateTime.UtcNow;
         }
 
-        public async Task RevokeRefreshTokenAsync(string refreshToken)
+        public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
-            var entity = await FindRefresh(refreshToken);
+            var entity = await FindRefresh(refreshToken, cancellationToken);
             if (entity is null) return;
 
             entity.RevokedAtUtc = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
+            await _db.SaveChangesAsync(cancellationToken);
 
             ClearAuthCookies();
         }
 
-        public async Task<TokenResponse?> RefreshTokensAsync(string refreshToken)
+        public async Task<TokenResponse?> RefreshTokensAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(refreshToken)) return null;
 
-            var existing = await FindRefresh(refreshToken);
+            var existing = await FindRefresh(refreshToken, cancellationToken);
             if (existing is null || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= DateTime.UtcNow)
                 return null;
 
-            var appUser = await _users.FindByIdAsync(existing.UserId.ToString());
+            var appUser = await _users.FindByIdAsync(existing.UserId.ToString()); // no cancellation overload
             if (appUser is null) return null;
 
-            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
+            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin"); // no cancellation overload
 
             var newRaw = GenerateRefreshTokenRaw();
             var newHash = Hash(newRaw);
@@ -123,12 +121,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 TokenHash = newHash,
                 ExpiresAtUtc = newExp,
                 IsPersistent = existing.IsPersistent,
-                IpAddress = _http.HttpContext?.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = _http.HttpContext?.Request.Headers.UserAgent.ToString()
             });
 
             var (jwt, jwtExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
-            await _db.SaveChangesAsync();
+            await _db.SaveChangesAsync(cancellationToken);
 
             SetAccessCookie(jwt, jwtExp);
             SetRefreshCookie(newRaw, newExp);
@@ -157,8 +153,8 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
             if (isAdmin)
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Admin")); // for RequireRole("Admin")
-                claims.Add(new Claim("isAdmin", "true"));        // optional convenience
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+                claims.Add(new Claim("isAdmin", "true"));
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Secret));
@@ -199,10 +195,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
             }
         }
 
-        private async Task<RefreshToken?> FindRefresh(string raw)
+        private async Task<RefreshToken?> FindRefresh(string raw, CancellationToken cancellationToken = default)
         {
             var hash = Hash(raw);
-            return await _db.RefreshTokens.FirstOrDefaultAsync(r => r.TokenHash == hash);
+            return await _db.RefreshTokens.FirstOrDefaultAsync(r => r.TokenHash == hash, cancellationToken);
         }
 
         private static string GenerateRefreshTokenRaw() =>

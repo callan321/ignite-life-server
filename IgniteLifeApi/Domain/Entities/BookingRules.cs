@@ -1,20 +1,24 @@
-﻿namespace IgniteLifeApi.Domain.Entities;
+﻿using IgniteLifeApi.Domain.Entities.Common;
+using IgniteLifeApi.Domain.Enums;
 
-public class BookingRules
+namespace IgniteLifeApi.Domain.Entities
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public bool IsDefault { get; set; } = false;
+    public class BookingRules : BaseEntity
+    {
+        public string TimeZoneId { get; set; } = "UTC";
 
-    // How far in advance can a booking be made
-    public int MaxAdvanceBookingDays { get; set; } = 30;
+        // How far in advance can a booking be made
+        public int MaxAdvanceBookingDays { get; set; } = 30;
 
-    // How much break time after each service
-    public int BufferBetweenBookingsMinutes { get; set; } = 30;
-    // How long each booking slot is
-    public int SlotDurationMinutes { get; set; } = 30;
+        // How much
+        public int BufferBetweenBookingsMinutes { get; set; } = 30;
+        // How long each booking slot is
+        public int SlotDurationMinutes { get; set; } = 30;
 
-    // How long before a booking can be made
-    public int MinAdvanceBookingHours { get; set; } = 12;
-    // One-to-many: opening hours per day
-    public List<BookingRuleOpeningHour> OpeningHours { get; set; } = [];
+        // How long before a booking can be made
+        public int MinAdvanceBookingHours { get; set; } = 12;
+        // One-to-many: opening hours per day
+        public List<BookingRuleOpeningHour> OpeningHours { get; set; } = [];
+        public List<BookingRuleBlockedPeriod> BlockedPeriods { get; set; } = [];
+    }
 }

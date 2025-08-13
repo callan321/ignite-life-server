@@ -68,7 +68,7 @@ builder.Services.AddHttpContextAccessor();
 // App services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<BookingRuleBlockedPeriodService>(); // if used by controllers
+builder.Services.AddScoped<BookingRuleService>(); // if used by controllers
 
 // AuthN / AuthZ
 var jwt = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;

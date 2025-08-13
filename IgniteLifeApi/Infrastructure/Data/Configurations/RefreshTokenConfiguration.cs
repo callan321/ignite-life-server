@@ -1,4 +1,5 @@
-﻿using IgniteLifeApi.Domain.Entities;
+﻿using IgniteLifeApi.Domain.Constants;
+using IgniteLifeApi.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,16 +21,10 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         // Required/lengths/types
         builder.Property(rt => rt.TokenHash)
                .IsRequired()
-               .HasMaxLength(64);
+               .HasMaxLength(FieldLengths.TokenHash);
 
         builder.Property(rt => rt.ReplacedByTokenHash)
-               .HasMaxLength(64);
-
-        builder.Property(rt => rt.IpAddress)
-               .HasMaxLength(45);
-
-        builder.Property(rt => rt.UserAgent)
-               .HasMaxLength(512);
+               .HasMaxLength(FieldLengths.TokenHash);
 
         builder.Property(rt => rt.ExpiresAtUtc)
                .IsRequired()
@@ -38,8 +33,8 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.Property(rt => rt.RevokedAtUtc)
                .HasColumnType("timestamptz");
 
-        builder.Property(rt => rt.CreatedAt).HasColumnType("timestamptz");
-        builder.Property(rt => rt.UpdatedAt).HasColumnType("timestamptz");
+        builder.Property(rt => rt.CreatedAtUtc).HasColumnType("timestamptz");
+        builder.Property(rt => rt.UpdatedAtUtc).HasColumnType("timestamptz");
 
         // Indexes
         builder.HasIndex(rt => rt.TokenHash).IsUnique();

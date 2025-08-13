@@ -7,11 +7,9 @@ namespace IgniteLifeApi.Infrastructure.Data
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
     {
-        public DbSet<Booking> Bookings { get; set; } = null!;
         public DbSet<BookingRuleOpeningHour> BookingRuleOpeningHours { get; set; } = null!;
         public DbSet<BookingRuleBlockedPeriod> BookingRuleBlockedPeriods { get; set; } = null!;
         public DbSet<BookingRules> BookingRules { get; set; } = null!;
-        public DbSet<BookingServiceType> BookingServiceTypes { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
         public DbSet<ApplicationUser> AdminUsers { get; set; } = null!;
 
@@ -35,16 +33,27 @@ namespace IgniteLifeApi.Infrastructure.Data
 
         private void UpdateTimestamps()
         {
-            var entries = ChangeTracker.Entries<IHasTimestamps>()
-                .Where(e => e.State is EntityState.Added or EntityState.Modified);
-
             var now = DateTime.UtcNow;
-            foreach (var entry in entries)
+
+            foreach (var entry in ChangeTracker.Entries<IHasTimestamps>())
             {
-                if (entry.State == EntityState.Added)
-                    entry.Entity.CreatedAt = now;
-                entry.Entity.UpdatedAt = now;
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        if (entry.Entity.CreatedAtUtc == default)
+                            entry.Entity.CreatedAtUtc = now;
+
+                        entry.Entity.UpdatedAtUtc = now;
+                        break;
+
+                    case EntityState.Modified:
+                        // Keep original CreatedAtUtc intact
+                        entry.Property(e => e.CreatedAtUtc).IsModified = false;
+                        entry.Entity.UpdatedAtUtc = now;
+                        break;
+                }
             }
         }
+
     }
 }

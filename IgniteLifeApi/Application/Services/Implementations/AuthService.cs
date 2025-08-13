@@ -25,9 +25,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
             _tokenService = tokenService;
         }
 
-        public async Task<ServiceResult<TokenResponse>> LoginAsync(LoginRequest request)
+        public async Task<ServiceResult<TokenResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _userManager.Users
+                .SingleOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
             if (user == null)
                 return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
@@ -39,27 +40,27 @@ namespace IgniteLifeApi.Application.Services.Implementations
             if (!signInResult.Succeeded)
                 return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
-            await _userManager.UpdateAsync(user);
+            await _userManager.UpdateAsync(user); // UserManager methods don’t have CancellationToken overloads
 
-            var tokenResponse = await _tokenService.GenerateTokensAsync(user.Id, request.RememberMe);
+            var tokenResponse = await _tokenService.GenerateTokensAsync(user.Id, request.RememberMe, cancellationToken);
             return ServiceResult<TokenResponse>.SuccessResult(tokenResponse);
         }
 
-        public async Task<ServiceResult<Unit>> LogoutAsync(string refreshToken)
+        public async Task<ServiceResult<Unit>> LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
                 return ServiceResult<Unit>.BadRequest("Refresh token is required.");
 
-            await _tokenService.RevokeRefreshTokenAsync(refreshToken);
-            await _signInManager.SignOutAsync();
+            await _tokenService.RevokeRefreshTokenAsync(refreshToken, cancellationToken);
+            await _signInManager.SignOutAsync(); // no cancellation support in SignInManager
             return ServiceResult<Unit>.NoContentResult();
         }
 
-        public async Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId)
+        public async Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId, CancellationToken cancellationToken = default)
         {
             var user = await _userManager.Users
                 .AsNoTracking()
-                .SingleOrDefaultAsync(u => u.Id == userId);
+                .SingleOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
             if (user == null)
                 return ServiceResult<AuthStatusResponse>.NotFound("User not found.");
@@ -73,15 +74,14 @@ namespace IgniteLifeApi.Application.Services.Implementations
             return ServiceResult<AuthStatusResponse>.SuccessResult(response);
         }
 
-        public async Task<ServiceResult<Unit>> RefreshTokensAsync(string refreshToken)
+        public async Task<ServiceResult<Unit>> RefreshTokensAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
-            var tokenResponse = await _tokenService.RefreshTokensAsync(refreshToken);
+            var tokenResponse = await _tokenService.RefreshTokensAsync(refreshToken, cancellationToken);
 
             if (tokenResponse is null)
                 return ServiceResult<Unit>.Unauthorized("Invalid or expired refresh token.");
 
             return ServiceResult<Unit>.SuccessResult(Unit.Value);
         }
-
     }
 }
