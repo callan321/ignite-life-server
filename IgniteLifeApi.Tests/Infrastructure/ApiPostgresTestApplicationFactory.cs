@@ -8,12 +8,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace IgniteLifeApi.Tests.Infrastructure
 {
     public class ApiPostgresTestApplicationFactory : WebApplicationFactory<Program>
     {
+        private string? _uniqueDbName;
+        private string? _baseConnectionString;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
@@ -41,55 +47,39 @@ namespace IgniteLifeApi.Tests.Infrastructure
             // Step 1: Build a temporary host to get the original connection string
             var tempHost = builder.Build();
             var config = tempHost.Services.GetRequiredService<IConfiguration>();
-            var originalConnectionString = config.GetConnectionString("DefaultConnection")
+            _baseConnectionString = config.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Missing DefaultConnection.");
 
-            // Step 2: Create a unique database name for isolation
-            var uniqueDbName = $"ignite_test_{Guid.NewGuid():N}";
+            // Step 2: Create a unique Postgres database
+            var uniqueConnectionString = PostgresTestDatabaseHelper.CreateUniqueDatabase(_baseConnectionString, out _uniqueDbName);
 
-            // Step 3: Build a new connection string pointing to the unique DB
-            var csb = new NpgsqlConnectionStringBuilder(originalConnectionString)
-            {
-                Database = uniqueDbName
-            };
-
-            // Step 4: Override connection string in configuration for the real host
+            // Step 3: Override connection string in configuration
             builder.ConfigureAppConfiguration((_, configBuilder) =>
             {
                 configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:DefaultConnection"] = csb.ToString()
+                    ["ConnectionStrings:DefaultConnection"] = uniqueConnectionString
                 });
             });
 
-            // Step 5: Start the actual host
+            // Step 4: Start the actual host
             var host = base.CreateHost(builder);
 
-            // Step 6: Create, migrate, and seed the new DB
-            EnsureDatabaseCreated(csb.ToString());
-            InitializeDatabase(host);
+            // Step 5: Run migrations & seed
+            using var db = PostgresTestDatabaseHelper.CreateMigratedContext<ApplicationDbContext>(uniqueConnectionString);
+            BookingRulesTestSeeder.SeedBookingRules(db);
 
             return host;
         }
 
-        private void EnsureDatabaseCreated(string connectionString)
+        public override async ValueTask DisposeAsync()
         {
-            // Create the DB if it doesn't exist by connecting to "postgres"
-            var csb = new NpgsqlConnectionStringBuilder(connectionString) { Database = "postgres" };
-            using var adminConn = new NpgsqlConnection(csb.ConnectionString);
-            adminConn.Open();
+            await base.DisposeAsync();
 
-            var dbName = new NpgsqlConnectionStringBuilder(connectionString).Database;
-            using var cmd = new NpgsqlCommand($@"CREATE DATABASE ""{dbName}"";", adminConn);
-            cmd.ExecuteNonQuery();
-        }
-
-        private void InitializeDatabase(IHost host)
-        {
-            using var scope = host.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            db.Database.Migrate();
-            BookingRulesTestSeeder.SeedBookingRules(db);
+            if (_baseConnectionString != null && _uniqueDbName != null)
+            {
+                PostgresTestDatabaseHelper.DropDatabase(_baseConnectionString, _uniqueDbName);
+            }
         }
 
         private void ConfigureTestAuthentication(IServiceCollection services)
