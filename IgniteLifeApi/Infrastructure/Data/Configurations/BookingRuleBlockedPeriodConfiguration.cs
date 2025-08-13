@@ -22,7 +22,7 @@ namespace IgniteLifeApi.Infrastructure.Data.Configurations
                    .HasColumnType("timestamptz");
 
             builder.Property(b => b.Description)
-                   .HasMaxLength(FieldLengths.Description);
+                   .HasMaxLength(FieldLengths.ShortText);
 
             builder.Property(b => b.CreatedAtUtc).HasColumnType("timestamptz");
             builder.Property(b => b.UpdatedAtUtc).HasColumnType("timestamptz");

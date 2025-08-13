@@ -10,7 +10,7 @@ namespace IgniteLifeApi.Application.Validators.BookingRules
         public UpdateBookingRuleBlockedPeriodDtoValidator()
         {
             RuleFor(x => x.Description)
-                .MaximumLength(FieldLengths.Description)
+                .MaximumLength(FieldLengths.ShortText)
                 .WithMessage("Description is too long.");
 
             RuleFor(x => x)

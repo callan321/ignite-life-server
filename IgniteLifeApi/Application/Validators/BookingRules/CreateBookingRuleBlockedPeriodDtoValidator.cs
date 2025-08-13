@@ -14,8 +14,8 @@ namespace IgniteLifeApi.Application.Validators.BookingRules
                 .WithMessage("Start time must be before end time.");
 
             RuleFor(x => x.Description)
-                .MaximumLength(FieldLengths.Description)
-                .WithMessage($"Description cannot exceed {FieldLengths.Description} characters.");
+                .MaximumLength(FieldLengths.ShortText)
+                .WithMessage($"Description cannot exceed {FieldLengths.ShortText} characters.");
         }
     }
 }

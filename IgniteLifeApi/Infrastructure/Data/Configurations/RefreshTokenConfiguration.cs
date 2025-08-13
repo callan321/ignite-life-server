@@ -21,10 +21,10 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         // Required/lengths/types
         builder.Property(rt => rt.TokenHash)
                .IsRequired()
-               .HasMaxLength(FieldLengths.TokenHash);
+               .HasMaxLength(FieldLengths.EncodedHash);
 
         builder.Property(rt => rt.ReplacedByTokenHash)
-               .HasMaxLength(FieldLengths.TokenHash);
+               .HasMaxLength(FieldLengths.EncodedHash);
 
         builder.Property(rt => rt.ExpiresAtUtc)
                .IsRequired()
