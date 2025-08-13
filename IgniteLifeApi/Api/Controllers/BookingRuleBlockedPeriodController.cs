@@ -1,6 +1,7 @@
-﻿using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
+﻿using IgniteLifeApi.Api.Controllers.Common;
+using IgniteLifeApi.Application.Dtos.BookingRuleBlockedPeriod;
 using IgniteLifeApi.Application.Services.Implementations;
-using IgniteLifeApi.Api.Controllers.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IgniteLifeApi.Api.Controllers;
@@ -9,6 +10,7 @@ namespace IgniteLifeApi.Api.Controllers;
 [Produces("application/json")]
 [Consumes("application/json")]
 [Route("api/[controller]")]
+[Authorize(Policy = "AdminUser")]
 public class BookingRuleBlockedPeriodController : ControllerBase
 {
     private readonly BookingRuleBlockedPeriodService _service;

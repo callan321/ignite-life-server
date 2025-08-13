@@ -45,12 +45,5 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.HasIndex(rt => rt.TokenHash).IsUnique();
         builder.HasIndex(rt => rt.UserId);
         builder.HasIndex(rt => rt.ExpiresAtUtc);
-
-        // Helpful filtered indexes (Postgres)
-        builder.HasIndex(rt => new { rt.UserId, rt.ExpiresAtUtc })
-               .HasFilter("\"RevokedAtUtc\" IS NULL");
-
-        builder.HasIndex(rt => new { rt.TokenHash, rt.RevokedAtUtc })
-               .HasFilter("\"RevokedAtUtc\" IS NULL");
     }
 }

@@ -1,9 +1,10 @@
-﻿using IgniteLifeApi.Application.Dtos.Auth;
+﻿using IgniteLifeApi.Api.Middleware;
+using IgniteLifeApi.Application.Dtos.Auth;
 using IgniteLifeApi.Application.Services.Interfaces;
 using IgniteLifeApi.Domain.Entities;
-using IgniteLifeApi.Domain.Interfaces;
 using IgniteLifeApi.Infrastructure.Configuration;
 using IgniteLifeApi.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -11,7 +12,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using IgniteLifeApi.Api.Middleware;
 
 namespace IgniteLifeApi.Application.Services.Implementations
 {
@@ -21,17 +21,29 @@ namespace IgniteLifeApi.Application.Services.Implementations
         private readonly JwtSettings _jwt;
         private readonly ApplicationDbContext _db;
         private readonly IHttpContextAccessor _http;
+        private readonly UserManager<ApplicationUser> _users;
 
-        public TokenService(IOptions<JwtSettings> jwtOptions, ApplicationDbContext db, IHttpContextAccessor http)
+        public TokenService(
+            IOptions<JwtSettings> jwtOptions,
+            ApplicationDbContext db,
+            IHttpContextAccessor http,
+            UserManager<ApplicationUser> users)
         {
             _jwt = jwtOptions.Value;
             _db = db;
             _http = http;
+            _users = users;
         }
 
-        public async Task<TokenResponse> GenerateTokensAsync(IJwtUser user, bool isPersistent)
+        // ------- New roles-only entrypoint (no IJwtUser) -------
+        public async Task<TokenResponse> GenerateTokensAsync(Guid userId, bool isPersistent)
         {
-            var (accessToken, accessExp) = GenerateAccessToken(user);
+            var appUser = await _users.FindByIdAsync(userId.ToString());
+            if (appUser is null) throw new InvalidOperationException("User not found.");
+
+            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
+
+            var (accessToken, accessExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
 
             var refreshExp = isPersistent
                 ? DateTime.UtcNow.AddDays(_jwt.RememberMeRefreshTokenExpiryDays)
@@ -42,20 +54,19 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
             _db.Add(new RefreshToken
             {
-                UserId = user.Id,
+                UserId = appUser.Id,
                 TokenHash = refreshHash,
                 ExpiresAtUtc = refreshExp,
                 IsPersistent = isPersistent,
                 IpAddress = _http.HttpContext?.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = _http.HttpContext?.Request.Headers.UserAgent.ToString(),
-                // CreatedAtUtc = DateTime.UtcNow, // if you track it
             });
 
             await _db.SaveChangesAsync();
 
             SetAccessCookie(accessToken, accessExp);
             SetRefreshCookie(rawRefresh, refreshExp);
-            SetCsrfCookie(refreshExp); // align CSRF lifetime with refresh
+            SetCsrfCookie(refreshExp);
 
             return new TokenResponse
             {
@@ -92,8 +103,10 @@ namespace IgniteLifeApi.Application.Services.Implementations
             if (existing is null || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= DateTime.UtcNow)
                 return null;
 
-            var user = await _db.AdminUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == existing.UserId);
-            if (user is null) return null;
+            var appUser = await _users.FindByIdAsync(existing.UserId.ToString());
+            if (appUser is null) return null;
+
+            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
 
             var newRaw = GenerateRefreshTokenRaw();
             var newHash = Hash(newRaw);
@@ -106,7 +119,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
             _db.RefreshTokens.Add(new RefreshToken
             {
-                UserId = user.Id,
+                UserId = appUser.Id,
                 TokenHash = newHash,
                 ExpiresAtUtc = newExp,
                 IsPersistent = existing.IsPersistent,
@@ -114,7 +127,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 UserAgent = _http.HttpContext?.Request.Headers.UserAgent.ToString()
             });
 
-            var (jwt, jwtExp) = GenerateAccessToken(user);
+            var (jwt, jwtExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
             await _db.SaveChangesAsync();
 
             SetAccessCookie(jwt, jwtExp);
@@ -128,16 +141,25 @@ namespace IgniteLifeApi.Application.Services.Implementations
             };
         }
 
-        private (string token, DateTime expiresUtc) GenerateAccessToken(IJwtUser user)
+        // ------- Token builder (pure, roles-first) -------
+        private (string token, DateTime expiresUtc) GenerateAccessToken(Guid userId, string? email, bool isAdmin)
         {
             var exp = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpiryMinutes);
 
             var claims = new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new(ClaimTypes.Email, user.Email),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // jti for traceability/blacklist
+                new(ClaimTypes.NameIdentifier, userId.ToString()),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
+
+            if (!string.IsNullOrWhiteSpace(email))
+                claims.Add(new Claim(ClaimTypes.Email, email!));
+
+            if (isAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin")); // for RequireRole("Admin")
+                claims.Add(new Claim("isAdmin", "true"));        // optional convenience
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -193,7 +215,6 @@ namespace IgniteLifeApi.Application.Services.Implementations
         }
 
         // ---------- Cookies ----------
-
         private CookieOptions BuildCookieOptions(DateTime expiresUtc)
         {
             var opts = new CookieOptions
@@ -246,8 +267,9 @@ namespace IgniteLifeApi.Application.Services.Implementations
             ctx.Response.Cookies.Append(_jwt.AccessTokenCookieName, string.Empty, expired);
             ctx.Response.Cookies.Append(_jwt.RefreshTokenCookieName, string.Empty, expired);
 
-            // Clear CSRF cookie too
-            var xsrfExpired = CsrfDoubleSubmitMiddleware.BuildCookieOptions(DateTime.UtcNow.AddDays(-1), _jwt.CookieDomain,
+            var xsrfExpired = CsrfDoubleSubmitMiddleware.BuildCookieOptions(
+                DateTime.UtcNow.AddDays(-1),
+                _jwt.CookieDomain,
                 string.IsNullOrWhiteSpace(_jwt.CookiePath) ? "/" : _jwt.CookiePath);
             ctx.Response.Cookies.Append(CsrfDoubleSubmitMiddleware.CsrfCookieName, string.Empty, xsrfExpired);
         }

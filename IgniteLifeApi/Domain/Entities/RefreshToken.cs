@@ -17,7 +17,7 @@ namespace IgniteLifeApi.Domain.Entities
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
         public bool IsPersistent { get; set; }
         public Guid UserId { get; set; }
-        public AdminUser User { get; set; } = default!;
+        public ApplicationUser User { get; set; } = default!;
 
         // Revocation / rotation
         public DateTime? RevokedAtUtc { get; set; }

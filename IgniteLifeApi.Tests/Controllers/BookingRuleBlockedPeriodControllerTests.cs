@@ -13,10 +13,12 @@ namespace IgniteLifeApi.Tests.Controllers
     {
         private readonly HttpClient _client;
         private readonly string _baseUrl = ApiRoutes.ForController<BookingRuleBlockedPeriodController>();
+        private readonly ApiPostgresTestApplicationFactory _factory;
 
         public BookingRuleBlockedPeriodControllerTests(ApiPostgresTestApplicationFactory factory)
         {
-            _client = factory.CreateClient();
+            _client = factory.CreateAdminClient();
+            _factory = factory;
         }
 
         [Fact]
@@ -606,6 +608,25 @@ namespace IgniteLifeApi.Tests.Controllers
             // Cleanup
             var deleteResponse = await _client.DeleteAsync($"{_baseUrl}/{created.Id}");
             deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Theory]
+        [InlineData(nameof(ApiPostgresTestApplicationFactory.CreateAnonymousClient), HttpStatusCode.Unauthorized)]
+        [InlineData(nameof(ApiPostgresTestApplicationFactory.CreateVerifiedClient), HttpStatusCode.Forbidden)]
+        [InlineData(nameof(ApiPostgresTestApplicationFactory.CreateAuthenticatedButUnverifiedClient), HttpStatusCode.Forbidden)]
+        public async Task NonAdminClients_ShouldBeBlocked(string clientFactoryMethod, HttpStatusCode expectedStatus)
+        {
+            // Arrange
+            var factoryMethod = typeof(ApiPostgresTestApplicationFactory)
+                .GetMethod(clientFactoryMethod)!;
+
+            var client = (HttpClient)factoryMethod.Invoke(_factory, null)!;
+
+            // Act
+            var response = await client.GetAsync(_baseUrl);
+
+            // Assert
+            response.StatusCode.Should().Be(expectedStatus);
         }
     }
 }

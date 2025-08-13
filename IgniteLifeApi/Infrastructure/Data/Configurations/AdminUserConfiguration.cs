@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace IgniteLifeApi.Infrastructure.Data.Configurations;
 
-public class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
+public class AdminUserConfiguration : IEntityTypeConfiguration<ApplicationUser>
 {
-    public void Configure(EntityTypeBuilder<AdminUser> builder)
+    public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
         builder.HasMany(a => a.RefreshTokens)
                .WithOne(rt => rt.User)

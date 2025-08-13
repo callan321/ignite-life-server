@@ -13,7 +13,7 @@ namespace IgniteLifeApi.Infrastructure.Data
         public DbSet<BookingRules> BookingRules { get; set; } = null!;
         public DbSet<BookingServiceType> BookingServiceTypes { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
-        public DbSet<AdminUser> AdminUsers { get; set; } = null!;
+        public DbSet<ApplicationUser> AdminUsers { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

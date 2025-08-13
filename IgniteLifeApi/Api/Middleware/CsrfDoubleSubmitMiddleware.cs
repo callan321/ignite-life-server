@@ -87,7 +87,7 @@ namespace IgniteLifeApi.Api.Middleware
         {
             var opts = new CookieOptions
             {
-                HttpOnly = false,                    // must be readable by JS to echo in header
+                HttpOnly = false,
                 Secure = true,
                 SameSite = SameSiteMode.None,
                 Path = string.IsNullOrWhiteSpace(path) ? "/" : path,

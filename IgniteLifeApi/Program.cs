@@ -9,12 +9,13 @@ using IgniteLifeApi.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +46,7 @@ builder.Services.AddOptions<JwtSettings>()
 var spaOrigin = builder.Configuration["Cors:SpaOrigin"]; // e.g. https://app.example
 
 // Identity (single admin user)
-builder.Services.AddIdentityCore<AdminUser>(o =>
+builder.Services.AddIdentityCore<ApplicationUser>(o =>
 {
     o.Password.RequiredLength = 12;
     o.Password.RequireDigit = true;
@@ -60,7 +61,7 @@ builder.Services.AddIdentityCore<AdminUser>(o =>
 })
 .AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddSignInManager<SignInManager<AdminUser>>();
+.AddSignInManager<SignInManager<ApplicationUser>>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -87,7 +88,8 @@ builder.Services
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            RoleClaimType = ClaimTypes.Role
         };
 
         // Read JWT from HttpOnly cookie
@@ -105,7 +107,13 @@ builder.Services
 
 // Authorization policies
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("VerifiedUser", p => p.RequireAuthenticatedUser());
+    .AddPolicy("VerifiedUser", p =>
+        p.RequireAuthenticatedUser()
+         .RequireClaim("verified", "true"))
+
+    .AddPolicy("AdminUser", p =>
+        p.RequireAuthenticatedUser()
+         .RequireClaim("isAdmin", "true"));
 
 // CORS — credentials for SPA
 builder.Services.AddCors(o => o.AddPolicy("spa", p =>

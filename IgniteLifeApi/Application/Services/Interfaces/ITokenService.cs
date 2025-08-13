@@ -1,12 +1,11 @@
-﻿using IgniteLifeApi.Application.Dtos.Auth;
-using IgniteLifeApi.Domain.Interfaces;
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using IgniteLifeApi.Application.Dtos.Auth;
 
 namespace IgniteLifeApi.Application.Services.Interfaces
 {
     public interface ITokenService
     {
-        Task<TokenResponse> GenerateTokensAsync(IJwtUser user, bool isPersistent);
+        Task<TokenResponse> GenerateTokensAsync(Guid userId, bool isPersistent);
         ClaimsPrincipal? ValidateAccessToken(string token);
         Task<bool> ValidateRefreshTokenAsync(string refreshToken);
         Task RevokeRefreshTokenAsync(string refreshToken);

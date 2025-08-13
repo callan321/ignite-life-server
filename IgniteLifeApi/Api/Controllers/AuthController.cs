@@ -43,7 +43,7 @@ namespace IgniteLifeApi.Api.Controllers
         {
             var refreshToken = GetRefreshToken();
             if (string.IsNullOrWhiteSpace(refreshToken))
-                return NoContent(); // Nothing to revoke
+                return NoContent();
 
             var result = await _authService.LogoutAsync(refreshToken);
             return ServiceResultToActionResult.ToActionResult(this, result);

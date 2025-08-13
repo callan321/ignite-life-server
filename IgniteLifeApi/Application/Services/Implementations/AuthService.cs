@@ -10,13 +10,13 @@ namespace IgniteLifeApi.Application.Services.Implementations
 {
     public class AuthService : IAuthService
     {
-        private readonly UserManager<AdminUser> _userManager;
-        private readonly SignInManager<AdminUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ITokenService _tokenService;
 
         public AuthService(
-            UserManager<AdminUser> userManager,
-            SignInManager<AdminUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
             ITokenService tokenService
         )
         {
@@ -41,7 +41,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
             await _userManager.UpdateAsync(user);
 
-            var tokenResponse = await _tokenService.GenerateTokensAsync(user, request.RememberMe);
+            var tokenResponse = await _tokenService.GenerateTokensAsync(user.Id, request.RememberMe);
             return ServiceResult<TokenResponse>.SuccessResult(tokenResponse);
         }
 
