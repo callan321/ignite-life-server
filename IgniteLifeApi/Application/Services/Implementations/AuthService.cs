@@ -4,7 +4,6 @@ using IgniteLifeApi.Application.Services.Common;
 using IgniteLifeApi.Application.Services.Interfaces;
 using IgniteLifeApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace IgniteLifeApi.Application.Services.Implementations
 {
@@ -17,8 +16,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
         public AuthService(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ITokenService tokenService
-        )
+            ITokenService tokenService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -27,20 +25,17 @@ namespace IgniteLifeApi.Application.Services.Implementations
 
         public async Task<ServiceResult<TokenResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
         {
-            var user = await _userManager.Users
-                .SingleOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
-            if (user == null)
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user is null)
                 return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
-            var signInResult = await _signInManager.CheckPasswordSignInAsync(
-                user,
-                request.Password,
-                lockoutOnFailure: true
-            );
-            if (!signInResult.Succeeded)
-                return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
+            // Optional: block unconfirmed
+            // if (!user.EmailConfirmed)
+            //     return ServiceResult<TokenResponse>.Unauthorized("Email not confirmed.");
 
-            await _userManager.UpdateAsync(user); // UserManager methods don’t have CancellationToken overloads
+            var signIn = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+            if (!signIn.Succeeded)
+                return ServiceResult<TokenResponse>.Unauthorized("Invalid email or password.");
 
             var tokenResponse = await _tokenService.GenerateTokensAsync(user.Id, request.RememberMe, cancellationToken);
             return ServiceResult<TokenResponse>.SuccessResult(tokenResponse);
@@ -52,23 +47,20 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 return ServiceResult<Unit>.BadRequest("Refresh token is required.");
 
             await _tokenService.RevokeRefreshTokenAsync(refreshToken, cancellationToken);
-            await _signInManager.SignOutAsync(); // no cancellation support in SignInManager
+            await _signInManager.SignOutAsync();
             return ServiceResult<Unit>.NoContentResult();
         }
 
         public async Task<ServiceResult<AuthStatusResponse>> GetUserStatusAsync(Guid userId, CancellationToken cancellationToken = default)
         {
-            var user = await _userManager.Users
-                .AsNoTracking()
-                .SingleOrDefaultAsync(u => u.Id == userId, cancellationToken);
-
-            if (user == null)
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
                 return ServiceResult<AuthStatusResponse>.NotFound("User not found.");
 
             var response = new AuthStatusResponse
             {
                 UserId = user.Id,
-                Email = user.Email,
+                Email = user.Email
             };
 
             return ServiceResult<AuthStatusResponse>.SuccessResult(response);
@@ -77,7 +69,6 @@ namespace IgniteLifeApi.Application.Services.Implementations
         public async Task<ServiceResult<Unit>> RefreshTokensAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             var tokenResponse = await _tokenService.RefreshTokensAsync(refreshToken, cancellationToken);
-
             if (tokenResponse is null)
                 return ServiceResult<Unit>.Unauthorized("Invalid or expired refresh token.");
 

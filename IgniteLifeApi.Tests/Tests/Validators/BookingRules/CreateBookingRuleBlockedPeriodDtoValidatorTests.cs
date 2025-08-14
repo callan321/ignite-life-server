@@ -80,7 +80,7 @@ namespace IgniteLifeApi.Tests.Tests.Validators.BookingRules
             {
                 StartDateTimeUtc = DateTime.UtcNow,
                 EndDateTimeUtc = DateTime.UtcNow.AddDays(1),
-                Description = new string('a', FieldLengths.Description)
+                Description = new string('a', FieldLengths.ShortText)
             };
 
             var result = _validator.Validate(dto);

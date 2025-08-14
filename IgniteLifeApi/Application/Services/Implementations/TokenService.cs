@@ -35,27 +35,20 @@ namespace IgniteLifeApi.Application.Services.Implementations
             _users = users;
         }
 
-        /// <summary>
-        /// Generates new access + refresh tokens for a given user, including role claims.
-        /// </summary>
+        /// <summary>Generates new access + refresh tokens for a given user, including role/verified claims.</summary>
         public async Task<TokenResponse> GenerateTokensAsync(Guid userId, bool isPersistent, CancellationToken cancellationToken = default)
         {
             var appUser = await _users.FindByIdAsync(userId.ToString());
             if (appUser is null)
                 throw new InvalidOperationException("User not found.");
 
-            // Ensure the user has confirmed their email
             if (!appUser.EmailConfirmed)
                 throw new InvalidOperationException("User email not confirmed.");
 
-            // Ensure the user is not locked out
-            if (appUser.LockoutEnabled && appUser.LockoutEnd.HasValue && appUser.LockoutEnd.Value.UtcDateTime > DateTime.UtcNow)
+            if (appUser.LockoutEnabled && appUser.LockoutEnd.GetValueOrDefault().UtcDateTime > DateTime.UtcNow)
                 throw new InvalidOperationException("User account is locked.");
 
-            // Determine if user is in the Admin role
-            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
-
-            var (accessToken, accessExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
+            var (accessToken, accessExp) = await GenerateAccessTokenAsync(appUser);
 
             var refreshExp = isPersistent
                 ? DateTime.UtcNow.AddDays(_jwt.RememberMeRefreshTokenExpiryDays)
@@ -97,24 +90,14 @@ namespace IgniteLifeApi.Application.Services.Implementations
         public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             var entity = await FindRefresh(refreshToken, cancellationToken);
-            if (entity is null)
-            {
-                // Nothing to revoke, but we can still clear cookies for safety
-                ClearAuthCookies();
-                return;
-            }
-
-            // Idempotent: only set once
-            if (entity.RevokedAtUtc is null)
+            if (entity is not null && entity.RevokedAtUtc is null)
             {
                 entity.RevokedAtUtc = DateTime.UtcNow;
                 await _db.SaveChangesAsync(cancellationToken);
             }
 
-            // Always clear cookies, even if it was already revoked
             ClearAuthCookies();
         }
-
 
         public async Task<TokenResponse?> RefreshTokensAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
@@ -127,8 +110,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
             var appUser = await _users.FindByIdAsync(existing.UserId.ToString());
             if (appUser is null) return null;
 
-            var isAdmin = await _users.IsInRoleAsync(appUser, "Admin");
-
+            // Rotate refresh token
             var newRaw = GenerateRefreshTokenRaw();
             var newHash = Hash(newRaw);
             var newExp = existing.IsPersistent
@@ -146,7 +128,7 @@ namespace IgniteLifeApi.Application.Services.Implementations
                 IsPersistent = existing.IsPersistent
             });
 
-            var (jwt, jwtExp) = GenerateAccessToken(appUser.Id, appUser.Email, isAdmin);
+            var (jwt, jwtExp) = await GenerateAccessTokenAsync(appUser);
             await _db.SaveChangesAsync(cancellationToken);
 
             SetAccessCookie(jwt, jwtExp);
@@ -161,26 +143,44 @@ namespace IgniteLifeApi.Application.Services.Implementations
         }
 
         // =========================
-        // Token Generation
+        // Claims & Access Token
         // =========================
-        private (string token, DateTime expiresUtc) GenerateAccessToken(Guid userId, string? email, bool isAdmin)
+        private async Task<List<Claim>> BuildUserClaimsAsync(ApplicationUser user)
         {
-            var exp = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpiryMinutes);
-
             var claims = new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, userId.ToString()),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            if (!string.IsNullOrWhiteSpace(email))
-                claims.Add(new Claim(ClaimTypes.Email, email));
+            if (!string.IsNullOrWhiteSpace(user.Email))
+                claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
-            if (isAdmin)
+            // Mark verified (adjust if you have a different flag)
+            var isVerified = user.EmailConfirmed;
+            claims.Add(new Claim("verified", isVerified ? "true" : "false"));
+
+            // Roles
+            var roles = await _users.GetRolesAsync(user);
+            foreach (var role in roles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
-                claims.Add(new Claim("isAdmin", "true"));
+                claims.Add(new Claim(ClaimTypes.Role, role));
+                if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+                    claims.Add(new Claim("isAdmin", "true"));
             }
+
+            // Security stamp for server-side invalidation
+            if (!string.IsNullOrEmpty(user.SecurityStamp))
+                claims.Add(new Claim("sstamp", user.SecurityStamp));
+
+            return claims;
+        }
+
+        private async Task<(string token, DateTime expiresUtc)> GenerateAccessTokenAsync(ApplicationUser user)
+        {
+            var exp = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpiryMinutes);
+            var claims = await BuildUserClaimsAsync(user);
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -98,7 +98,7 @@ namespace IgniteLifeApi.Tests.Tests.Validators.BookingRules
         {
             var dto = new UpdateBookingRuleBlockedPeriodDto
             {
-                Description = new string('x', FieldLengths.Description)
+                Description = new string('x', FieldLengths.ShortText)
             };
 
             var result = _validator.Validate(dto);
