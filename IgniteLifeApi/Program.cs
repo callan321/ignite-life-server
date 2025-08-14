@@ -134,10 +134,11 @@ builder.Services
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("VerifiedUser", p =>
         p.RequireAuthenticatedUser()
-         .RequireClaim("verified", "true"))
+        .RequireClaim("verified", "true"))
     .AddPolicy("AdminUser", p =>
         p.RequireAuthenticatedUser()
-         .RequireClaim("isAdmin", "true"));
+        .RequireClaim("verified", "true")
+        .RequireRole("Admin"));
 
 // ===================================
 // CORS

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "IgniteLife.Tools": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
